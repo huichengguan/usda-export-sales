@@ -1,0 +1,62 @@
+name: USDA Weekly Export Sales Intelligence
+
+on:
+  schedule:
+    # Every Thursday at 13:30 UTC (8:30 AM US Eastern Time, 9:30 PM SGT)
+    - cron: '30 13 * * 4'
+    # Backup run Friday at 13:30 UTC in case of US federal holiday delay
+    - cron: '30 13 * * 5'
+  workflow_dispatch: # Allows manual run anytime with a single click
+
+permissions:
+  contents: write
+  pages: write
+  id-token: write
+
+concurrency:
+  group: "pages"
+  cancel-in-progress: false
+
+jobs:
+  update-and-report:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Run USDA Export Sales pipeline
+        env:
+          SMTP_HOST: ${{ secrets.SMTP_HOST || 'smtp.gmail.com' }}
+          SMTP_PORT: ${{ secrets.SMTP_PORT || '587' }}
+          SMTP_USER: ${{ secrets.SMTP_USER }}
+          SMTP_PASSWORD: ${{ secrets.SMTP_PASSWORD }}
+          EMAIL_FROM: ${{ secrets.EMAIL_FROM || secrets.SMTP_USER }}
+          EMAIL_RECIPIENT: ${{ secrets.EMAIL_RECIPIENT || 'chengguan.hui@first-resources.com' }}
+          GITHUB_REPOSITORY: ${{ github.repository }}
+        run: |
+          python fetch_and_update.py
+
+      - name: Commit updated index.html & data
+        run: |
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "github-actions[bot]@users.noreply.github.com"
+          git add index.html
+          git commit -m "Auto-update USDA Export Sales dashboard [skip ci]" || echo "No changes to commit"
+          git push || echo "No changes to push"
+
+      - name: Setup GitHub Pages
+        uses: actions/configure-pages@v4
+
+      - name: Upload artifact for GitHub Pages
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: '.'
+
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
