@@ -42,14 +42,14 @@ print(f"Starting USDA Export Sales Cloud Runner at {datetime.now().isoformat()}.
 print(f"Target Recipient : {EMAIL_RECIPIENT}")
 print(f"GitHub Pages URL : {PAGES_URL}")
 
-target_years = ['2022/2023', '2023/2024', '2024/2025', '2025/2026', '2026/2027']
+target_years = ['2016/2017', '2017/2018', '2018/2019', '2019/2020', '2020/2021', '2021/2022', '2022/2023', '2023/2024', '2024/2025', '2025/2026', '2026/2027']
 
 def fetch_raw_grain_records(commodity_name):
     query = f"""
     SELECT date, myear, my, country,
            totcommcmy, outsalescmy, accexportscmy, netsalescmy,
            outsalesnmy, netsalesnmy
-    WHERE commodity = '{commodity_name}' AND date >= '2022-01-01T00:00:00.000'
+    WHERE commodity = '{commodity_name}' AND date >= '2016-01-01T00:00:00.000'
     ORDER BY date ASC
     LIMIT 50000
     """
