@@ -2,30 +2,20 @@
 title Push USDA Export Sales to GitHub
 cd /d "C:\Users\guang\.gemini\antigravity\scratch\usda_export_sales"
 echo ========================================================
-echo   Push USDA Export Sales Tracker to GitHub
+echo   Pushing USDA Export Sales Tracker to GitHub...
 echo ========================================================
+echo Target: https://github.com/huichengguan/usda-export-sales.git
 echo.
-set /p REPO_URL="Paste your GitHub repository URL (e.g. https://github.com/huichengguan/usda-export-sales.git): "
-
-if "%REPO_URL%"=="" (
-    echo [ERROR] No URL entered. Exiting.
-    pause
-    exit /b
-)
-
-echo.
-echo -> Setting remote repository to: %REPO_URL%
-git remote remove origin 2>nul
-git remote add origin %REPO_URL%
+git remote set-url origin https://github.com/huichengguan/usda-export-sales.git
 git branch -M main
-
-echo.
-echo -> Pushing files to GitHub...
-echo (If a browser window pops up, click 'Sign in with your browser' to authorize)
 git push -u origin main
-
 echo.
-echo ========================================================
-echo   Done! Your repository is now live on GitHub.
-echo ========================================================
+if %ERRORLEVEL% EQU 0 (
+    echo ========================================================
+    echo   [SUCCESS] Code successfully pushed to GitHub!
+    echo ========================================================
+) else (
+    echo [NOTE] If a browser window popped up, please click 'Sign in' / 'Authorize' and try again.
+)
+echo.
 pause
