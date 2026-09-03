@@ -331,7 +331,7 @@ def get_8row_table_data(comm_key):
         return rows
 
 def format_table_html(comm_title, emoji, myear_label, rows):
-    fmt = lambda v: f"{v:,.1f}"
+    fmt = lambda v: f"{round(v):,}"
     
     tbody = ""
     for r in rows:
