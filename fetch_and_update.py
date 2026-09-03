@@ -312,69 +312,27 @@ print(f"-> Generated {index_file.name} ({index_file.stat().st_size/1024:.1f} KB)
 release_date = soybeans_pkg['latest_date']
 
 def get_8row_table_data(comm_key):
-    pkg = all_commodities[comm_key]
-    dest_items = []
-    unk_item = {'name': '6. Unknown Destinations', 'net_cmy': 0, 'acc_cmy': 0, 'out_cmy': 0, 'tot_cmy': 0, 'net_nmy': 0, 'out_nmy': 0}
-    total_item = {'name': '8. Total (All Destinations)', 'net_cmy': 0, 'acc_cmy': 0, 'out_cmy': 0, 'tot_cmy': 0, 'net_nmy': 0, 'out_nmy': 0}
-    
-    for d in pkg['destinations']:
-        if d['id'] in ['ex_china_unk', 'total']: continue
-        dObj = pkg['data'].get(d['id'])
-        if not dObj: continue
-        cmy = dObj['curves'].get('2025-26', [])
-        nmy = dObj['curves'].get('2026-27', [])
-        lc = cmy[-1] if cmy else {'mnt': 0, 'kmt': 0, 'net_kmt': 0}
-        ln = nmy[-1] if nmy else {'mnt': 0, 'kmt': 0, 'net_kmt': 0}
-        
-        tot_cmy = lc['kmt']
-        out_cmy = tot_cmy * 0.05
-        acc_cmy = tot_cmy * 0.95
-        net_cmy = lc.get('net_kmt', 0)
-        out_nmy = ln['kmt']
-        net_nmy = ln.get('net_kmt', 0)
-        
-        item = {'id': d['id'], 'name': d['name'], 'net_cmy': net_cmy, 'acc_cmy': acc_cmy, 'out_cmy': out_cmy, 'tot_cmy': tot_cmy, 'net_nmy': net_nmy, 'out_nmy': out_nmy}
-        if d['id'] == 'unknown':
-            unk_item = item
-            unk_item['name'] = '6. Unknown Destinations'
-        else:
-            dest_items.append(item)
-            
-    dest_items.sort(key=lambda x: x['tot_cmy'], reverse=True)
-    top_5 = dest_items[:5]
-    remaining = dest_items[5:]
-    
-    rem_item = {'name': '7. Remaining Destinations (Sum)', 'net_cmy': 0, 'acc_cmy': 0, 'out_cmy': 0, 'tot_cmy': 0, 'net_nmy': 0, 'out_nmy': 0}
-    for r in remaining:
-        for k in ['net_cmy', 'acc_cmy', 'out_cmy', 'tot_cmy', 'net_nmy', 'out_nmy']:
-            rem_item[k] += r[k]
-            
-    totObj = pkg['data'].get('total')
-    if totObj:
-        cmy = totObj['curves'].get('2025-26', [])
-        nmy = totObj['curves'].get('2026-27', [])
-        lc = cmy[-1] if cmy else {'mnt': 0, 'kmt': 0, 'net_kmt': 0}
-        ln = nmy[-1] if nmy else {'mnt': 0, 'kmt': 0, 'net_kmt': 0}
-        total_item = {
-            'name': '8. Total (All Destinations)',
-            'tot_cmy': lc['kmt'],
-            'acc_cmy': lc['kmt'] * 0.96,
-            'out_cmy': lc['kmt'] * 0.04,
-            'net_cmy': lc.get('net_kmt', 0),
-            'out_nmy': ln['kmt'],
-            'net_nmy': ln.get('net_kmt', 0)
-        }
-        
-    rows = []
-    for idx, t in enumerate(top_5, 1):
-        rows.append({'name': f"{idx}. {t['name']}", 'vals': t, 'is_total': False})
-    rows.append({'name': unk_item['name'], 'vals': unk_item, 'is_total': False})
-    rows.append({'name': rem_item['name'], 'vals': rem_item, 'is_total': False})
-    rows.append({'name': total_item['name'], 'vals': total_item, 'is_total': True})
-    return rows
+    pkg = commodities_data[comm_key]
+    if 'table_8rows' in pkg:
+        rows = []
+        for r in pkg['table_8rows']:
+            rows.append({
+                'name': r['name'],
+                'vals': {
+                    'acc_cmy': r['acc_cmy'] / 1000.0,
+                    'out_cmy': r['out_cmy'] / 1000.0,
+                    'tot_cmy': r['tot_cmy'] / 1000.0,
+                    'net_cmy': r['net_cmy'] / 1000.0,
+                    'net_nmy': r['net_nmy'] / 1000.0,
+                    'out_nmy': r['out_nmy'] / 1000.0
+                },
+                'is_total': r.get('is_total', False)
+            })
+        return rows
 
 def format_table_html(comm_title, emoji, myear_label, rows):
     fmt = lambda v: f"{v:,.1f}"
+    
     tbody = ""
     for r in rows:
         v = r['vals']
@@ -400,16 +358,18 @@ def format_table_html(comm_title, emoji, myear_label, rows):
         <table style="width: 100%; border-collapse: collapse; font-size: 12px;">
             <thead>
                 <tr style="background: #f8fafc; color: #475569; border-bottom: 2px solid #cbd5e1; font-weight: 600; text-transform: uppercase; font-size: 11px;">
-                    <th style="padding: 8px 10px; text-align: left;">Destination Category</th>
+                    <th style="padding: 8px 10px; text-align: left;"># Destination Category</th>
                     <th style="padding: 8px 10px; text-align: right;">Accum Exp</th>
-                    <th style="padding: 8px 10px; text-align: right;">Outstanding</th>
-                    <th style="padding: 8px 10px; text-align: right; color: #2563eb;">Total Commit</th>
+                    <th style="padding: 8px 10px; text-align: right;">Outstanding (CMY)</th>
+                    <th style="padding: 8px 10px; text-align: right; color: #2563eb;">Total Commit (CMY)</th>
                     <th style="padding: 8px 10px; text-align: right; color: #d97706;">Weekly Net (CMY)</th>
                     <th style="padding: 8px 10px; text-align: right; color: #7c3aed;">Weekly Net (NMY)</th>
                     <th style="padding: 8px 10px; text-align: right; color: #dc2626;">New Crop Out</th>
                 </tr>
             </thead>
-            <tbody>{tbody}</tbody>
+            <tbody>
+                {tbody}
+            </tbody>
         </table>
     </div>
     """
