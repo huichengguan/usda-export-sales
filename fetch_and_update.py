@@ -382,11 +382,11 @@ def format_table_html(comm_title, emoji, myear_label, rows):
         tbody += f"""
         <tr style="{bg} border-bottom: 1px solid #e2e8f0;">
             <td style="padding: 7px 10px; text-align: left; font-weight: 500;">{r['name']}</td>
-            <td style="padding: 7px 10px; text-align: right; font-family: monospace;">{fmt(v['net_cmy'])}</td>
             <td style="padding: 7px 10px; text-align: right; font-family: monospace;">{fmt(v['acc_cmy'])}</td>
             <td style="padding: 7px 10px; text-align: right; font-family: monospace;">{fmt(v['out_cmy'])}</td>
             <td style="padding: 7px 10px; text-align: right; font-family: monospace; color: #2563eb; font-weight: bold;">{fmt(v['tot_cmy'])}</td>
-            <td style="padding: 7px 10px; text-align: right; font-family: monospace;">{fmt(v['net_nmy'])}</td>
+            <td style="padding: 7px 10px; text-align: right; font-family: monospace; color: #d97706; font-weight: 600;">{fmt(v['net_cmy'])}</td>
+            <td style="padding: 7px 10px; text-align: right; font-family: monospace; color: #7c3aed; font-weight: 600;">{fmt(v['net_nmy'])}</td>
             <td style="padding: 7px 10px; text-align: right; font-family: monospace; color: #dc2626; font-weight: bold;">{fmt(v['out_nmy'])}</td>
         </tr>
         """
@@ -401,11 +401,11 @@ def format_table_html(comm_title, emoji, myear_label, rows):
             <thead>
                 <tr style="background: #f8fafc; color: #475569; border-bottom: 2px solid #cbd5e1; font-weight: 600; text-transform: uppercase; font-size: 11px;">
                     <th style="padding: 8px 10px; text-align: left;">Destination Category</th>
-                    <th style="padding: 8px 10px; text-align: right;">Weekly Net</th>
                     <th style="padding: 8px 10px; text-align: right;">Accum Exp</th>
                     <th style="padding: 8px 10px; text-align: right;">Outstanding</th>
                     <th style="padding: 8px 10px; text-align: right; color: #2563eb;">Total Commit</th>
-                    <th style="padding: 8px 10px; text-align: right;">NMY Net</th>
+                    <th style="padding: 8px 10px; text-align: right; color: #d97706;">Weekly Net (CMY)</th>
+                    <th style="padding: 8px 10px; text-align: right; color: #7c3aed;">Weekly Net (NMY)</th>
                     <th style="padding: 8px 10px; text-align: right; color: #dc2626;">New Crop Out</th>
                 </tr>
             </thead>
