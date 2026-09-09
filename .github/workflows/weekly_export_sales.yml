@@ -4,8 +4,12 @@ on:
   schedule:
     # Every Thursday at 13:30 UTC (8:30 AM US Eastern Time, 9:30 PM SGT)
     - cron: '30 13 * * 4'
-    # Backup run Friday at 13:30 UTC in case of US federal holiday delay
+    # Thursday retry run at 14:15 UTC (9:15 AM US Eastern Time) if release is delayed
+    - cron: '15 14 * * 4'
+    # Backup run Friday at 13:30 UTC in case of US federal holiday delay (e.g. Labor Day, Memorial Day)
     - cron: '30 13 * * 5'
+    # Friday retry run at 14:15 UTC
+    - cron: '15 14 * * 5'
   workflow_dispatch: # Allows manual run anytime with a single click
 
 permissions:
@@ -45,7 +49,7 @@ jobs:
         run: |
           git config --global user.name "github-actions[bot]"
           git config --global user.email "github-actions[bot]@users.noreply.github.com"
-          git add index.html
+          git add index.html multi_commodity_payload.json
           git commit -m "Auto-update USDA Export Sales dashboard [skip ci]" || echo "No changes to commit"
           git push || echo "No changes to push"
 

@@ -1,0 +1,1551 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>USDA Export Sales Seasonal Progress & Pacing Tracker | First Resources</title>
+  <script src="https://www.gstatic.com/antigravity/web/dev/tailwindcss.min.js"></script>
+  <style>
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    }
+    .stat-card {
+      background: var(--card, #ffffff);
+      border: 1px solid var(--border, #e2e8f0);
+    }
+    .custom-scrollbar::-webkit-scrollbar {
+      width: 6px;
+      height: 6px;
+    }
+    .custom-scrollbar::-webkit-scrollbar-thumb {
+      background-color: rgba(156, 163, 175, 0.5);
+      border-radius: 4px;
+    }
+    .commodity-tab.active {
+      background-color: #2563eb;
+      color: #ffffff;
+      border-color: #2563eb;
+      font-weight: 700;
+    }
+    .category-tab.active {
+      background-color: #1e293b;
+      color: #ffffff;
+      border-color: #1e293b;
+      font-weight: 700;
+      box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+    }
+    .pacing-tab.active {
+      background-color: #0f172a;
+      color: #ffffff;
+      border-color: #0f172a;
+      font-weight: 700;
+    }
+    .preset-btn {
+      transition: all 0.15s ease-in-out;
+    }
+    .preset-btn:hover {
+      background-color: #e2e8f0;
+    }
+  </style>
+</head>
+<body class="bg-[var(--background,#f8fafc)] text-[var(--foreground,#0f172a)] antialiased p-3 md:p-6 min-h-screen">
+  <div class="max-w-7xl mx-auto space-y-5">
+    
+    <!-- Top Header & Global Controls -->
+    <header class="bg-[var(--card,#ffffff)] border border-[var(--border,#e2e8f0)] rounded-xl p-5 shadow-sm space-y-4">
+      <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
+        <div class="flex items-center gap-3.5">
+          <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-blue-600 to-indigo-700 flex items-center justify-center text-white font-black text-lg shadow-sm">
+            FR
+          </div>
+          <div>
+            <h1 class="text-lg md:text-xl font-extrabold text-[var(--foreground,#0f172a)] tracking-tight" id="page-title">
+              USDA Export Sales Seasonal Progress & Pacing
+            </h1>
+            <p class="text-xs text-[var(--muted-foreground,#64748b)]">
+              Multi-Commodity Intelligence Dashboard &bull; First Resources Market Analytics
+            </p>
+          </div>
+        </div>
+
+        <!-- Unit & Metadata Controls -->
+        <div class="flex flex-wrap items-center gap-2.5">
+          <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-semibold bg-emerald-50 text-emerald-800 border border-emerald-200">
+            <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+            <span>Week Ending {{RELEASE_DATE}}</span>
+          </span>
+
+          <!-- Unit Switcher -->
+          <div class="inline-flex rounded-lg border border-[var(--border,#cbd5e1)] p-0.5 bg-[var(--secondary,#f1f5f9)] text-xs font-medium">
+            <button id="btn-kmt" onclick="setUnit('kmt')" class="px-3 py-1 rounded-md bg-white text-[var(--foreground,#0f172a)] shadow-xs font-bold transition-all">1,000 MT</button>
+            <button id="btn-mnt" onclick="setUnit('mnt')" class="px-3 py-1 rounded-md text-slate-500 hover:text-slate-900 font-medium transition-all">mn t</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Commodity Tabs & Destination Filter Bar -->
+      <div class="flex flex-col lg:flex-row lg:items-center justify-between gap-3 pt-3 border-t border-[var(--border,#e2e8f0)]">
+        <!-- Commodity Navigation Tabs -->
+        <div class="flex flex-wrap items-center gap-1.5" id="commodity-tabs-container">
+          <!-- Rendered dynamically -->
+        </div>
+
+        <!-- Destination Filter Dropdown -->
+        <div class="relative inline-block text-left" id="dest-dropdown-wrapper">
+          <div class="flex items-center gap-2">
+            <label class="text-xs font-semibold text-[var(--muted-foreground,#64748b)] whitespace-nowrap">Destination:</label>
+            <button id="dest-dropdown-btn" onclick="toggleDestDropdown()" type="button" class="inline-flex items-center justify-between w-64 sm:w-80 px-3 py-1.5 text-xs font-medium bg-[var(--card,#ffffff)] border border-[var(--border,#cbd5e1)] rounded-lg shadow-xs hover:bg-[var(--secondary,#f1f5f9)] focus:outline-none focus:ring-2 focus:ring-blue-500">
+              <span id="dest-btn-label" class="truncate font-semibold text-blue-700 dark:text-blue-400">🌎 All Destinations (Total US)</span>
+              <svg class="w-4 h-4 ml-1.5 text-slate-400 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
+            </button>
+          </div>
+
+          <!-- Dropdown Panel -->
+          <div id="dest-dropdown-panel" class="hidden absolute right-0 z-50 mt-1 w-80 sm:w-96 bg-[var(--card,#ffffff)] border border-[var(--border,#cbd5e1)] rounded-xl shadow-2xl p-3 space-y-2.5">
+            <!-- Quick Presets -->
+            <div class="pb-2 border-b border-[var(--border,#e2e8f0)] space-y-1.5">
+              <div class="text-[10px] font-bold text-[var(--muted-foreground,#64748b)] uppercase tracking-wider">Quick Presets:</div>
+              <div class="grid grid-cols-2 gap-1.5">
+                <button onclick="applyPreset('all')" class="preset-btn px-2 py-1 rounded bg-blue-50 text-blue-700 border border-blue-200 text-left font-bold text-[11px] truncate">🌎 All Destinations (Total US)</button>
+                <button onclick="applyPreset('top10')" class="preset-btn px-2 py-1 rounded bg-amber-50 text-amber-800 border border-amber-200 text-left font-bold text-[11px] truncate">⭐ Top 10 Buyers</button>
+                <button onclick="applyPreset('top5')" class="preset-btn px-2 py-1 rounded bg-[var(--secondary,#f1f5f9)] text-left font-medium text-[11px] truncate">⭐ Top 5 Buyers</button>
+                <button onclick="applyPreset('ex_china_unk')" class="preset-btn px-2 py-1 rounded bg-[var(--secondary,#f1f5f9)] text-left font-medium text-[11px] truncate">🚫 Excl. China & Unk</button>
+                <button id="preset-btn-china" onclick="applyPreset('china')" class="preset-btn px-2 py-1 rounded bg-[var(--secondary,#f1f5f9)] text-left font-medium text-[11px] truncate col-span-2">🇨🇳 China Only</button>
+              </div>
+              <div class="flex justify-between items-center pt-1 text-[11px]">
+                <button onclick="selectAllDests(true)" class="text-blue-600 hover:underline font-semibold">Select All</button>
+                <button onclick="selectAllDests(false)" class="text-rose-600 hover:underline font-semibold">Clear</button>
+              </div>
+            </div>
+
+            <!-- Search box -->
+            <div class="py-1">
+              <input type="text" id="dest-search" placeholder="Search countries (e.g. Mexico, Japan)..." oninput="filterDestChecklist()" class="w-full bg-[var(--background,#f8fafc)] border border-[var(--border,#cbd5e1)] rounded-md px-2.5 py-1 text-xs focus:outline-none focus:ring-1 focus:ring-blue-500">
+            </div>
+
+            <!-- Checklist Container -->
+            <div id="dest-checklist" class="max-h-56 overflow-y-auto custom-scrollbar space-y-1 divide-y divide-slate-100 dark:divide-slate-800">
+              <!-- Populated dynamically -->
+            </div>
+
+            <!-- Close Button -->
+            <div class="pt-2 border-t border-[var(--border,#e2e8f0)] flex justify-between items-center">
+              <span class="text-[10px] text-slate-400">Click name to view single destination</span>
+              <button onclick="toggleDestDropdown()" class="px-3 py-1 bg-blue-600 text-white rounded-md font-semibold text-xs shadow-xs hover:bg-blue-700">Apply & Close</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </header>
+
+    <!-- Executive KPI Cards -->
+    <div class="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4">
+      <div class="stat-card rounded-xl p-4 shadow-xs">
+        <div class="text-xs font-medium text-[var(--muted-foreground,#64748b)] uppercase tracking-wider" id="kpi-cmy-title">Total Commitments</div>
+        <div class="text-2xl font-extrabold text-[var(--foreground,#0f172a)] mt-1" id="kpi-cmy-tot">--</div>
+        <div class="text-[11px] text-[var(--muted-foreground,#64748b)] mt-1 truncate" id="kpi-cmy-breakdown">Current Marketing Year</div>
+      </div>
+
+      <div class="stat-card rounded-xl p-4 shadow-xs">
+        <div class="text-xs font-medium text-[var(--muted-foreground,#64748b)] uppercase tracking-wider">YoY Comparison</div>
+        <div class="text-2xl font-extrabold mt-1" id="kpi-yoy-diff">--</div>
+        <div class="text-[11px] text-[var(--muted-foreground,#64748b)] mt-1" id="kpi-yoy-pct">vs prior season pace</div>
+      </div>
+
+      <div class="stat-card rounded-xl p-4 shadow-xs">
+        <div class="text-xs font-medium text-[var(--muted-foreground,#64748b)] uppercase tracking-wider" id="kpi-nmy-title">New Crop Bookings</div>
+        <div class="text-2xl font-extrabold text-blue-600 dark:text-blue-400 mt-1" id="kpi-nmy-tot">--</div>
+        <div class="text-[11px] text-[var(--muted-foreground,#64748b)] mt-1 font-medium" id="kpi-nmy-net">Latest Week Net: --</div>
+      </div>
+
+      <div class="stat-card rounded-xl p-4 shadow-xs">
+        <div class="text-xs font-medium text-[var(--muted-foreground,#64748b)] uppercase tracking-wider">Market Share</div>
+        <div class="text-2xl font-extrabold text-indigo-600 dark:text-indigo-400 mt-1" id="kpi-share">--</div>
+        <div class="text-[11px] text-[var(--muted-foreground,#64748b)] mt-1 truncate" id="kpi-share-desc">of total US exports</div>
+      </div>
+    </div>
+
+    <!-- ===================================================================== -->
+    <!-- 1. PRIMARY SECTION: MAIN SEASONAL PROGRESS & PACING CHART (FIRST!)   -->
+    <!-- ===================================================================== -->
+    <div class="stat-card rounded-xl p-5 shadow-xs space-y-4">
+      <div class="flex flex-col lg:flex-row lg:items-center justify-between pb-3 border-b border-[var(--border,#e2e8f0)] gap-3">
+        <div>
+          <h2 class="text-base md:text-lg font-bold text-[var(--foreground,#0f172a)] text-center lg:text-left" id="chart-title">
+            US Export Sales Seasonal Progress
+          </h2>
+          <p class="text-xs text-[var(--muted-foreground,#64748b)] text-center lg:text-left" id="chart-subtitle">
+            11-Year seasonal comparison aligned across marketing years with official USDA Target Pacing Trajectory
+          </p>
+        </div>
+        
+        <!-- Category & Controls Bar -->
+        <div class="flex flex-wrap items-center justify-center lg:justify-end gap-2">
+          <!-- Category Toggles (Total Commitments, Accum Exports, Outstanding Sales, Pacing Pace) -->
+          <div class="inline-flex rounded-lg border border-[var(--border,#cbd5e1)] p-0.5 bg-[var(--secondary,#f1f5f9)] text-xs font-medium">
+            <button id="btn-cat-tot" onclick="setChartCategory('tot')" class="category-tab active px-2.5 py-1 rounded">📊 Total Commitments</button>
+            <button id="btn-cat-acc" onclick="setChartCategory('acc')" class="category-tab px-2.5 py-1 rounded text-slate-600 hover:text-slate-900">🚢 Accum Exports</button>
+            <button id="btn-cat-out" onclick="setChartCategory('out')" class="category-tab px-2.5 py-1 rounded text-slate-600 hover:text-slate-900">📝 Outstanding Sales</button>
+            <button id="btn-cat-pacing" onclick="setChartCategory('pacing')" class="category-tab px-2.5 py-1 rounded text-amber-700 hover:text-amber-900 font-bold">🎯 USDA Target Pace</button>
+          </div>
+
+          <!-- Destination Scope Quick Pills -->
+          <div class="inline-flex rounded-lg border border-[var(--border,#cbd5e1)] p-0.5 bg-[var(--secondary,#f1f5f9)] text-xs font-medium">
+            <button id="btn-scope-all" onclick="applyPreset('all')" class="px-2.5 py-1 rounded bg-white text-[var(--foreground,#0f172a)] shadow-xs font-bold transition-all" title="View national total US export sales">🌎 All US</button>
+            <button id="btn-scope-top10" onclick="applyPreset('top10')" class="px-2.5 py-1 rounded text-slate-600 hover:text-slate-900 font-semibold transition-all" title="Aggregate top 10 commercial buyers for active commodity">⭐ Top 10</button>
+            <button id="btn-scope-top5" onclick="applyPreset('top5')" class="px-2.5 py-1 rounded text-slate-600 hover:text-slate-900 font-semibold transition-all" title="Aggregate top 5 commercial buyers">⭐ Top 5</button>
+          </div>
+
+          <!-- Year Presets -->
+          <div class="inline-flex rounded-lg border border-[var(--border,#cbd5e1)] p-0.5 bg-[var(--secondary,#f1f5f9)] text-xs font-medium">
+            <button id="btn-preset-all" onclick="setYearPreset('all')" class="px-2 py-1 rounded bg-white text-[var(--foreground,#0f172a)] shadow-xs font-bold">11-Yr View</button>
+            <button id="btn-preset-5yr" onclick="setYearPreset('5yr')" class="px-2 py-1 rounded text-slate-500 hover:text-slate-900 font-medium">Last 5 Yrs</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Target Pace Banner Info (Visible ONLY when All Destinations are selected) -->
+      <div id="chart-target-banner" class="flex flex-wrap items-center justify-between gap-2 px-3 py-2 rounded-lg bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800 text-xs text-amber-900 dark:text-amber-200">
+        <div class="flex items-center gap-2">
+          <span class="font-bold text-amber-700 dark:text-amber-400">🎯 USDA Target Trajectory:</span>
+          <span id="target-banner-desc">Official 2026/27 export target path required to meet USDA print</span>
+        </div>
+        <div class="flex items-center gap-3 font-semibold">
+          <span id="target-banner-req-sales">Req Weekly Sales: --</span>
+          <span id="target-banner-progress">Pace: --</span>
+        </div>
+      </div>
+
+      <!-- Canvas Area -->
+      <div class="relative w-full h-[430px] md:h-[510px]">
+        <canvas id="seasonalChart" class="w-full h-full block"></canvas>
+        <div id="chart-tooltip" class="absolute hidden pointer-events-none z-20 bg-slate-900 text-white rounded-lg shadow-2xl px-3.5 py-2.5 text-xs transition-opacity duration-150 border border-slate-700 min-w-[210px]"></div>
+      </div>
+
+      <!-- Interactive Year Toggles (Legend) -->
+      <div class="pt-3 border-t border-[var(--border,#e2e8f0)] space-y-2">
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+          <div class="text-[11px] font-semibold text-[var(--muted-foreground,#64748b)] uppercase tracking-wider">
+            Interactive Trajectories & Years (Click to toggle visibility):
+          </div>
+          <div class="flex items-center gap-2">
+            <button id="btn-toggle-target-line" onclick="toggleTargetLine()" class="flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-bold border border-amber-400 bg-amber-100 text-amber-900 shadow-xs">
+              <span class="w-2 h-2 rounded-full bg-amber-500"></span>
+              <span id="target-line-btn-text">🎯 2026/27 USDA Target Trajectory</span>
+            </button>
+          </div>
+        </div>
+        <div class="flex flex-wrap items-center gap-1.5" id="legend-container">
+          <!-- Rendered dynamically -->
+        </div>
+      </div>
+    </div>
+
+    <!-- ===================================================================== -->
+    <!-- 2. USDA PACING TRACKER & CLOSE-OUT AUDIT MATRIX                       -->
+    <!-- ===================================================================== -->
+    <div class="stat-card rounded-xl p-5 shadow-xs space-y-4">
+      <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-[var(--border,#e2e8f0)]">
+        <div>
+          <h2 class="text-base md:text-lg font-bold text-[var(--foreground,#0f172a)] flex items-center gap-2">
+            <span>USDA Export Target Pacing & Weekly Seasonal Run-Rate Analysis</span>
+          </h2>
+          <p class="text-xs text-[var(--muted-foreground,#64748b)]">
+            Required weekly pace audit: current commitments vs official USDA FAS PSD balance sheet export projections
+          </p>
+        </div>
+
+        <!-- Marketing Year Toggle for Pacing (2026/27 New Crop vs 2025/26 Closeout) -->
+        <div class="inline-flex rounded-lg border border-[var(--border,#cbd5e1)] p-0.5 bg-[var(--secondary,#f1f5f9)] text-xs font-medium self-start sm:self-auto">
+          <button id="btn-pacing-nmy" onclick="setPacingYear('nmy_2026_27')" class="pacing-tab active px-3 py-1.5 rounded-md font-bold transition-all shadow-xs">
+            🌱 2026/27 New Crop Pace
+          </button>
+          <button id="btn-pacing-cmy" onclick="setPacingYear('cmy_2025_26')" class="pacing-tab px-3 py-1.5 rounded-md text-slate-600 hover:text-slate-900 font-semibold transition-all">
+            🏁 2025/26 Close-out Audit
+          </button>
+        </div>
+      </div>
+
+      <!-- Current Selected Commodity Pacing Details -->
+      <div class="grid grid-cols-1 md:grid-cols-4 gap-3.5" id="pacing-cards-grid">
+        <div class="p-3.5 rounded-lg border border-[var(--border,#e2e8f0)] bg-slate-50 dark:bg-slate-900/40">
+          <div class="text-[11px] font-semibold text-[var(--muted-foreground,#64748b)] uppercase tracking-wider" id="pacing-card1-title">USDA Official Target</div>
+          <div class="text-xl font-black text-slate-900 dark:text-slate-100 mt-1" id="pacing-card1-val">--</div>
+          <div class="text-[11px] text-[var(--muted-foreground,#64748b)] mt-0.5" id="pacing-card1-sub">Official USDA PSD Balance Sheet</div>
+        </div>
+
+        <div class="p-3.5 rounded-lg border border-[var(--border,#e2e8f0)] bg-slate-50 dark:bg-slate-900/40">
+          <div class="text-[11px] font-semibold text-[var(--muted-foreground,#64748b)] uppercase tracking-wider" id="pacing-card2-title">Booked Commitments</div>
+          <div class="text-xl font-black text-blue-700 dark:text-blue-400 mt-1" id="pacing-card2-val">--</div>
+          <div class="text-[11px] font-semibold mt-0.5" id="pacing-card2-sub">--% of USDA Target</div>
+        </div>
+
+        <div class="p-3.5 rounded-lg border border-indigo-200 dark:border-indigo-900 bg-indigo-50/50 dark:bg-indigo-950/30">
+          <div class="text-[11px] font-semibold text-indigo-700 dark:text-indigo-400 uppercase tracking-wider" id="pacing-card3-title">Req. Weekly Sales Pace</div>
+          <div class="text-xl font-black text-indigo-900 dark:text-indigo-200 mt-1" id="pacing-card3-val">--</div>
+          <div class="text-[11px] text-indigo-700 dark:text-indigo-400 mt-0.5" id="pacing-card3-sub">Remaining required sales pace</div>
+        </div>
+
+        <div class="p-3.5 rounded-lg border border-[var(--border,#e2e8f0)] bg-slate-50 dark:bg-slate-900/40">
+          <div class="text-[11px] font-semibold text-[var(--muted-foreground,#64748b)] uppercase tracking-wider" id="pacing-card4-title">Req. Weekly Shipments</div>
+          <div class="text-xl font-black text-slate-800 dark:text-slate-200 mt-1" id="pacing-card4-val">--</div>
+          <div class="text-[11px] text-[var(--muted-foreground,#64748b)] mt-0.5" id="pacing-card4-sub">Run-rate needed to avoid rollover</div>
+        </div>
+      </div>
+
+      <!-- Pacing Gauge & Seasonal Benchmark Bar -->
+      <div class="p-4 rounded-xl border border-[var(--border,#e2e8f0)] bg-[var(--card,#ffffff)] space-y-3">
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 text-xs">
+          <div class="flex items-center gap-2">
+            <span class="font-bold text-slate-800 dark:text-slate-200" id="gauge-commodity-title">Corn Pacing Status</span>
+            <span id="gauge-status-badge" class="px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-emerald-100 text-emerald-800">● Ahead of 5-Yr Pace</span>
+          </div>
+          <div class="text-slate-500" id="gauge-numbers-desc">
+            Booked: 14,444 k MT (17.4%) vs 5-Yr Avg Pace: 16.5%
+          </div>
+        </div>
+
+        <!-- Progress Bar Container -->
+        <div class="space-y-1.5">
+          <div class="relative w-full h-4 bg-slate-200 dark:bg-slate-700 rounded-full overflow-hidden">
+            <div id="progress-bar-current" class="h-full bg-blue-600 rounded-full transition-all duration-500" style="width: 17.4%"></div>
+            <div id="progress-marker-5yr" class="absolute top-0 bottom-0 w-1 bg-amber-500 z-10" style="left: 16.5%" title="5-Year Average Seasonal Pace"></div>
+          </div>
+          <div class="flex justify-between items-center text-[10px] font-medium text-slate-400">
+            <span>0% (Season Start)</span>
+            <span class="text-amber-600 dark:text-amber-400 font-bold" id="label-marker-5yr">▲ 5-Yr Avg Pace (16.5%)</span>
+            <span>100% (USDA Target)</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Multi-Commodity Summary Matrix Table -->
+      <div class="space-y-2 pt-2">
+        <div class="text-xs font-bold text-[var(--foreground,#0f172a)] uppercase tracking-wider">
+          Cross-Commodity USDA Export Pacing Matrix (Click row to view):
+        </div>
+        <div class="overflow-x-auto custom-scrollbar border border-[var(--border,#e2e8f0)] rounded-lg">
+          <table class="w-full text-left text-xs whitespace-nowrap" id="pacing-matrix-table">
+            <thead class="bg-slate-50 dark:bg-slate-900 border-b border-[var(--border,#cbd5e1)] text-[11px] font-bold text-slate-700 dark:text-slate-300">
+              <tr>
+                <th class="py-2.5 px-3">Commodity</th>
+                <th class="py-2.5 px-3">Marketing Year</th>
+                <th class="py-2.5 px-3">Status</th>
+                <th class="py-2.5 px-3 text-right">USDA Target</th>
+                <th class="py-2.5 px-3 text-right">Commitments</th>
+                <th class="py-2.5 px-3 text-right">% of Target</th>
+                <th class="py-2.5 px-3 text-right">5-Yr Avg Pace</th>
+                <th class="py-2.5 px-3 text-right">Req. Weekly Sales</th>
+                <th class="py-2.5 px-3 text-right">Req. Weekly Shipments</th>
+                <th class="py-2.5 px-3 text-center">Pace Status</th>
+              </tr>
+            </thead>
+            <tbody class="divide-y divide-[var(--border,#e2e8f0)]" id="pacing-matrix-tbody">
+              <!-- Dynamically populated -->
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- ===================================================================== -->
+    <!-- 3. TOP 10 DESTINATIONS WEEKLY BREAKDOWN TABLE                         -->
+    <!-- ===================================================================== -->
+    <div class="stat-card rounded-xl p-5 shadow-xs space-y-3">
+      <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-2 border-b border-[var(--border,#e2e8f0)]">
+        <div>
+          <h2 class="text-base font-bold text-[var(--foreground,#0f172a)]" id="table-8rows-title">
+            Latest USDA Export Sales Release &mdash; Top 10 Destinations & Commercial Breakdown
+          </h2>
+          <p class="text-xs text-[var(--muted-foreground,#64748b)]">
+            Full commercial audit for active and next marketing years. Click any destination row to view its isolated curve above.
+          </p>
+        </div>
+        <span class="text-xs font-semibold px-2.5 py-1 rounded bg-[var(--secondary,#f1f5f9)] text-[var(--muted-foreground,#64748b)]" id="table-unit-badge">
+          Unit: 1,000 MT
+        </span>
+      </div>
+      
+      <div class="overflow-x-auto custom-scrollbar border border-[var(--border,#e2e8f0)] rounded-lg">
+        <table class="w-full text-left text-xs whitespace-nowrap">
+          <thead class="bg-slate-50 dark:bg-slate-900 border-b border-[var(--border,#cbd5e1)] text-[11px] font-bold text-slate-700 dark:text-slate-300">
+            <tr>
+              <th class="py-2.5 px-3"># Destination Category</th>
+              <th class="py-2.5 px-3 text-right">Accum Exp</th>
+              <th class="py-2.5 px-3 text-right">Outstanding (CMY)</th>
+              <th class="py-2.5 px-3 text-right text-blue-700 dark:text-blue-400">Total Commit (CMY)</th>
+              <th class="py-2.5 px-3 text-right">Weekly Net (CMY)</th>
+              <th class="py-2.5 px-3 text-right">Weekly Net (NMY)</th>
+              <th class="py-2.5 px-3 text-right text-rose-600 dark:text-rose-400 font-bold">New Crop Outstanding</th>
+              <th class="py-2.5 px-3 text-center">Chart Action</th>
+            </tr>
+          </thead>
+          <tbody class="divide-y divide-[var(--border,#e2e8f0)]" id="table-8rows-tbody">
+            <!-- Populated dynamically with 10 destinations + Unknown + Remaining + Total -->
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- ===================================================================== -->
+    <!-- 4. HISTORICAL PROGRESSION LOG TABLE                                   -->
+    <!-- ===================================================================== -->
+    <div class="stat-card rounded-xl p-5 shadow-xs space-y-3">
+      <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-2 border-b border-[var(--border,#e2e8f0)]">
+        <div>
+          <h2 class="text-base font-bold text-[var(--foreground,#0f172a)]" id="prog-table-title">
+            11-Year Seasonal Progression Log
+          </h2>
+          <p class="text-xs text-[var(--muted-foreground,#64748b)]">
+            Aligned weekly export commitments across marketing years for the selected destination scope
+          </p>
+        </div>
+      </div>
+      
+      <div class="overflow-x-auto max-h-96 custom-scrollbar border border-[var(--border,#e2e8f0)] rounded-lg">
+        <table class="w-full text-left text-xs whitespace-nowrap">
+          <thead class="bg-slate-50 dark:bg-slate-900 border-b border-[var(--border,#cbd5e1)] text-[11px] font-bold sticky top-0 z-10 text-slate-700 dark:text-slate-300" id="prog-table-thead">
+            <!-- Dynamic header -->
+          </thead>
+          <tbody class="divide-y divide-[var(--border,#e2e8f0)]" id="prog-table-tbody">
+            <!-- Dynamic progression rows -->
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+  </div>
+
+  <script>
+    // Embedded Multi-Commodity Payload with FAS Series & USDA Targets
+    const COMMODITIES = {{COMMODITIES_PAYLOAD}};
+
+    let currentCommodity = 'corn';
+    let currentUnit = 'kmt'; // 'kmt' or 'mnt'
+    let currentCategory = 'tot'; // 'tot', 'acc', 'out', 'pacing'
+    let currentPacingYear = 'nmy_2026_27'; // 'nmy_2026_27' or 'cmy_2025_26'
+    let currentDestScope = 'all'; // 'all', 'top10', 'top5', 'custom'
+    let showTargetLine = true;
+
+    const selectedDestIds = new Set();
+    let aggregatedCurve = {};
+
+    const ALL_YEARS = [
+      '2016-17', '2017-18', '2018-19', '2019-20', '2020-21',
+      '2021-22', '2022-23', '2023-24', '2024-25', '2025-26', '2026-27'
+    ];
+
+    const YEAR_CONFIG = {
+      '2016-17': { color: '#94a3b8', width: 1.2, visible: true },
+      '2017-18': { color: '#a8a29e', width: 1.2, visible: true },
+      '2018-19': { color: '#cbd5e1', width: 1.2, visible: true },
+      '2019-20': { color: '#d1d5db', width: 1.2, visible: true },
+      '2020-21': { color: '#9ca3af', width: 1.4, visible: true },
+      '2021-22': { color: '#64748b', width: 1.4, visible: true },
+      '2022-23': { color: '#475569', width: 1.6, visible: true },
+      '2023-24': { color: '#0ea5e9', width: 1.8, visible: true },
+      '2024-25': { color: '#8b5cf6', width: 2.0, visible: true },
+      '2025-26': { color: '#2563eb', width: 3.2, visible: true },
+      '2026-27': { color: '#10b981', width: 3.0, visible: true }
+    };
+
+    function init() {
+      renderCommodityTabs();
+      applyPreset('all');
+      renderLegend();
+      setupCanvasEvents();
+      window.addEventListener('resize', () => drawChart());
+      renderPacingTracker();
+    }
+
+    function switchCommodity(cKey) {
+      if (cKey === currentCommodity) return;
+      currentCommodity = cKey;
+      renderCommodityTabs();
+      applyPreset(currentDestScope === 'custom' ? 'all' : currentDestScope);
+      renderPacingTracker();
+    }
+
+    function renderCommodityTabs() {
+      const container = document.getElementById('commodity-tabs-container');
+      container.innerHTML = '';
+      Object.keys(COMMODITIES).forEach(key => {
+        const item = COMMODITIES[key];
+        const btn = document.createElement('button');
+        btn.className = `commodity-tab px-3.5 py-1.5 rounded-lg border text-xs font-semibold transition-all ${
+          key === currentCommodity ? 'active shadow-xs' : 'border-[var(--border,#cbd5e1)] bg-[var(--card,#ffffff)] text-[var(--muted-foreground,#64748b)] hover:bg-[var(--secondary,#f1f5f9)]'
+        }`;
+        btn.onclick = () => switchCommodity(key);
+        btn.textContent = item.commodity;
+        container.appendChild(btn);
+      });
+
+      const pkg = COMMODITIES[currentCommodity];
+      const hasChina = pkg && pkg.destinations.some(d => d.id === 'china' || d.id.includes('china'));
+      const chinaBtn = document.getElementById('preset-btn-china');
+      if (chinaBtn) {
+        chinaBtn.style.display = hasChina ? 'block' : 'none';
+      }
+    }
+
+    function isAllDestsSelected() {
+      return currentDestScope === 'all';
+    }
+
+    function selectSingleDest(did) {
+      currentDestScope = 'custom';
+      selectedDestIds.clear();
+      selectedDestIds.add(did);
+      renderChecklist();
+      updateButtonLabel();
+      updateView();
+      document.getElementById('dest-dropdown-panel').classList.add('hidden');
+    }
+
+    function selectDestByName(displayName) {
+      const cleanName = displayName.replace(/^\\d+\\.\\s*/, '').trim().toLowerCase();
+      const pkg = COMMODITIES[currentCommodity];
+      if (!pkg) return;
+      const found = pkg.destinations.find(d => 
+        d.name.toLowerCase() === cleanName || 
+        d.id.toLowerCase() === cleanName ||
+        d.name.toLowerCase().includes(cleanName) ||
+        cleanName.includes(d.name.toLowerCase())
+      );
+      if (found) {
+        selectSingleDest(found.id);
+        window.scrollTo({ top: 120, behavior: 'smooth' });
+      }
+    }
+
+    function applyPreset(type) {
+      const pkg = COMMODITIES[currentCommodity];
+      if (!pkg) return;
+
+      selectedDestIds.clear();
+
+      if (type === 'all') {
+        currentDestScope = 'all';
+        pkg.destinations.forEach(d => {
+          if (d.id !== 'total' && d.id !== 'ex_china_unk') {
+            selectedDestIds.add(d.id);
+          }
+        });
+      } else if (type === 'top10') {
+        currentDestScope = 'top10';
+        const countries = pkg.destinations.filter(d => d.type === 'country');
+        countries.slice(0, 10).forEach(d => selectedDestIds.add(d.id));
+      } else if (type === 'top5') {
+        currentDestScope = 'top5';
+        const countries = pkg.destinations.filter(d => d.type === 'country');
+        countries.slice(0, 5).forEach(d => selectedDestIds.add(d.id));
+      } else if (type === 'ex_china_unk') {
+        currentDestScope = 'custom';
+        pkg.destinations.forEach(d => {
+          if (d.id !== 'total' && d.id !== 'ex_china_unk' && d.id !== 'unknown' && !d.id.includes('china')) {
+            selectedDestIds.add(d.id);
+          }
+        });
+      } else if (type === 'china') {
+        currentDestScope = 'custom';
+        const ch = pkg.destinations.find(d => d.id === 'china' || d.id.includes('china'));
+        if (ch) selectedDestIds.add(ch.id);
+      }
+
+      renderChecklist();
+      updateButtonLabel();
+      updateView();
+    }
+
+    function selectAllDests(select) {
+      const pkg = COMMODITIES[currentCommodity];
+      if (!pkg) return;
+      selectedDestIds.clear();
+      if (select) {
+        currentDestScope = 'all';
+        pkg.destinations.forEach(d => {
+          if (d.id !== 'total' && d.id !== 'ex_china_unk') selectedDestIds.add(d.id);
+        });
+      } else {
+        currentDestScope = 'custom';
+      }
+      renderChecklist();
+      updateButtonLabel();
+      updateView();
+    }
+
+    function renderChecklist() {
+      const pkg = COMMODITIES[currentCommodity];
+      const container = document.getElementById('dest-checklist');
+      container.innerHTML = '';
+
+      pkg.destinations.forEach(d => {
+        if (d.id === 'total' || d.id === 'ex_china_unk') return;
+        const row = document.createElement('div');
+        row.className = 'flex items-center justify-between px-2 py-1.5 hover:bg-slate-100 dark:hover:bg-slate-800 rounded text-xs transition-colors';
+        const isChecked = selectedDestIds.has(d.id);
+        
+        row.innerHTML = `
+          <div class="flex items-center gap-2 overflow-hidden cursor-pointer" onclick="selectSingleDest('${d.id}')">
+            <input type="checkbox" value="${d.id}" ${isChecked ? 'checked' : ''} onclick="event.stopPropagation();" onchange="onCheckboxChange(this)" class="rounded text-blue-600 focus:ring-blue-500 h-3.5 w-3.5 shrink-0">
+            <span class="truncate ${d.type === 'group' ? 'font-bold text-indigo-600 dark:text-indigo-400' : 'text-slate-700 dark:text-slate-300'}">${d.name}</span>
+          </div>
+          <button onclick="selectSingleDest('${d.id}')" class="text-[10px] font-semibold text-blue-600 hover:text-blue-800 hover:underline shrink-0 ml-1">Only</button>
+        `;
+        container.appendChild(row);
+      });
+    }
+
+    function filterDestChecklist() {
+      const query = document.getElementById('dest-search').value.toLowerCase();
+      const container = document.getElementById('dest-checklist');
+      Array.from(container.children).forEach(child => {
+        const text = child.textContent.toLowerCase();
+        child.style.display = text.includes(query) ? 'flex' : 'none';
+      });
+    }
+
+    function onCheckboxChange(cb) {
+      currentDestScope = 'custom';
+      if (cb.checked) {
+        selectedDestIds.add(cb.value);
+      } else {
+        selectedDestIds.delete(cb.value);
+      }
+      updateButtonLabel();
+      updateView();
+    }
+
+    function updateButtonLabel() {
+      const pkg = COMMODITIES[currentCommodity];
+      const label = document.getElementById('dest-btn-label');
+      const allBtn = document.getElementById('btn-scope-all');
+      const top10Btn = document.getElementById('btn-scope-top10');
+      const top5Btn = document.getElementById('btn-scope-top5');
+
+      const isAll = (currentDestScope === 'all');
+      const isTop10 = (currentDestScope === 'top10');
+      const isTop5 = (currentDestScope === 'top5');
+
+      if (allBtn && top10Btn && top5Btn) {
+        allBtn.className = `px-2.5 py-1 rounded transition-all ${isAll ? 'bg-white text-[var(--foreground,#0f172a)] shadow-xs font-bold' : 'text-slate-600 hover:text-slate-900 font-semibold'}`;
+        top10Btn.className = `px-2.5 py-1 rounded transition-all ${isTop10 ? 'bg-white text-[var(--foreground,#0f172a)] shadow-xs font-bold' : 'text-slate-600 hover:text-slate-900 font-semibold'}`;
+        top5Btn.className = `px-2.5 py-1 rounded transition-all ${isTop5 ? 'bg-white text-[var(--foreground,#0f172a)] shadow-xs font-bold' : 'text-slate-600 hover:text-slate-900 font-semibold'}`;
+      }
+
+      if (isAll) {
+        label.textContent = '🌎 All Destinations (Total US)';
+      } else if (isTop10) {
+        label.textContent = '⭐ Top 10 Buying Destinations';
+      } else if (isTop5) {
+        label.textContent = '⭐ Top 5 Buying Destinations';
+      } else if (selectedDestIds.size === 0) {
+        label.textContent = 'None selected';
+      } else if (selectedDestIds.size === 1) {
+        const id = Array.from(selectedDestIds)[0];
+        const dest = pkg.destinations.find(d => d.id === id);
+        label.textContent = dest ? `📍 ${dest.name}` : '1 Destination';
+      } else {
+        label.textContent = `📍 ${selectedDestIds.size} Destinations Selected`;
+      }
+    }
+
+    function setUnit(u) {
+      currentUnit = u;
+      syncUnitButtons();
+      updateView();
+      renderPacingTracker();
+    }
+
+    function syncUnitButtons() {
+      const isKmt = currentUnit === 'kmt';
+      document.getElementById('btn-kmt').className = `px-3 py-1 rounded-md font-bold transition-all ${
+        isKmt ? 'bg-white text-[var(--foreground,#0f172a)] shadow-xs' : 'text-slate-500 hover:text-slate-900'
+      }`;
+      document.getElementById('btn-mnt').className = `px-3 py-1 rounded-md font-bold transition-all ${
+        !isKmt ? 'bg-white text-[var(--foreground,#0f172a)] shadow-xs' : 'text-slate-500 hover:text-slate-900'
+      }`;
+      const badge = document.getElementById('table-unit-badge');
+      if (badge) badge.textContent = `Unit: ${isKmt ? '1,000 MT' : 'mn t'}`;
+    }
+
+    function setChartCategory(cat) {
+      currentCategory = cat;
+      syncCategoryButtons();
+      updateView();
+    }
+
+    function syncCategoryButtons() {
+      ['tot', 'acc', 'out', 'pacing'].forEach(c => {
+        const btn = document.getElementById('btn-cat-' + c);
+        if (!btn) return;
+        if (c === currentCategory) {
+          btn.className = 'category-tab active px-2.5 py-1 rounded';
+        } else {
+          btn.className = 'category-tab px-2.5 py-1 rounded text-slate-600 hover:text-slate-900 font-medium';
+        }
+      });
+    }
+
+    function toggleTargetLine() {
+      showTargetLine = !showTargetLine;
+      const btn = document.getElementById('btn-toggle-target-line');
+      if (showTargetLine) {
+        btn.className = 'flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-bold border border-amber-400 bg-amber-100 text-amber-900 shadow-xs';
+      } else {
+        btn.className = 'flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-semibold border border-dashed border-slate-300 opacity-50 text-slate-600';
+      }
+      drawChart();
+    }
+
+    function setPacingYear(yr) {
+      currentPacingYear = yr;
+      document.getElementById('btn-pacing-nmy').className = `pacing-tab px-3 py-1.5 rounded-md font-bold transition-all shadow-xs ${
+        yr === 'nmy_2026_27' ? 'active bg-slate-900 text-white' : 'text-slate-600 hover:text-slate-900 font-semibold'
+      }`;
+      document.getElementById('btn-pacing-cmy').className = `pacing-tab px-3 py-1.5 rounded-md font-bold transition-all shadow-xs ${
+        yr === 'cmy_2025_26' ? 'active bg-slate-900 text-white' : 'text-slate-600 hover:text-slate-900 font-semibold'
+      }`;
+      renderPacingTracker();
+    }
+
+    function setYearPreset(preset) {
+      if (preset === 'all') {
+        ALL_YEARS.forEach(y => YEAR_CONFIG[y].visible = true);
+        document.getElementById('btn-preset-all').className = 'px-2 py-1 rounded bg-white text-[var(--foreground,#0f172a)] shadow-xs font-bold';
+        document.getElementById('btn-preset-5yr').className = 'px-2 py-1 rounded text-slate-500 hover:text-slate-900 font-medium';
+      } else if (preset === '5yr') {
+        ALL_YEARS.forEach(y => {
+          YEAR_CONFIG[y].visible = ['2022-23', '2023-24', '2024-25', '2025-26', '2026-27'].includes(y);
+        });
+        document.getElementById('btn-preset-5yr').className = 'px-2 py-1 rounded bg-white text-[var(--foreground,#0f172a)] shadow-xs font-bold';
+        document.getElementById('btn-preset-all').className = 'px-2 py-1 rounded text-slate-500 hover:text-slate-900 font-medium';
+      }
+      renderLegend();
+      drawChart();
+      renderProgressionTable();
+    }
+
+    function renderLegend() {
+      const container = document.getElementById('legend-container');
+      container.innerHTML = '';
+      ALL_YEARS.forEach(y => {
+        const cfg = YEAR_CONFIG[y];
+        const btn = document.createElement('button');
+        btn.className = 'flex items-center gap-1.5 px-2 py-0.5 rounded text-[11px] font-semibold border transition-all ' + 
+          (cfg.visible ? 'border-[var(--border,#cbd5e1)] bg-[var(--secondary,#f1f5f9)]' : 'border-dashed border-slate-300 opacity-35');
+        btn.onclick = () => {
+          cfg.visible = !cfg.visible;
+          renderLegend();
+          drawChart();
+          renderProgressionTable();
+        };
+        btn.innerHTML = `<span class="w-3 h-1.5 rounded-full" style="background-color: ${cfg.color}"></span><span>${y}</span>`;
+        container.appendChild(btn);
+      });
+    }
+
+    function computeAggregatedCurves() {
+      const pkg = COMMODITIES[currentCommodity];
+      aggregatedCurve = {};
+
+      if (isAllDestsSelected() && pkg.data['total']) {
+        ALL_YEARS.forEach(y => {
+          aggregatedCurve[y] = pkg.data['total'].curves[y] || [];
+        });
+        return;
+      }
+
+      if (selectedDestIds.size === 1) {
+        const singleId = Array.from(selectedDestIds)[0];
+        if (pkg.data[singleId]) {
+          ALL_YEARS.forEach(y => {
+            aggregatedCurve[y] = pkg.data[singleId].curves[y] || [];
+          });
+          return;
+        }
+      }
+
+      ALL_YEARS.forEach(y => {
+        const pts = [];
+        let maxLen = 0;
+        selectedDestIds.forEach(did => {
+          const d = pkg.data[did];
+          if (d && d.curves[y] && d.curves[y].length > maxLen) {
+            maxLen = d.curves[y].length;
+          }
+        });
+
+        for (let i = 0; i < maxLen; i++) {
+          let sumTot = 0, sumAcc = 0, sumOut = 0, sumNet = 0;
+          let sampleDate = '';
+
+          selectedDestIds.forEach(did => {
+            const d = pkg.data[did];
+            if (d && d.curves[y] && i < d.curves[y].length) {
+              const p = d.curves[y][i];
+              sumTot += (p.tot_kmt || p.kmt || 0);
+              sumAcc += (p.acc_kmt || 0);
+              sumOut += (p.out_kmt || 0);
+              sumNet += (p.net_kmt || 0);
+              if (!sampleDate) sampleDate = p.date;
+            }
+          });
+
+          pts.push({
+            date: sampleDate,
+            tot_kmt: sumTot,
+            acc_kmt: sumAcc,
+            out_kmt: sumOut,
+            net_kmt: sumNet,
+            kmt: sumTot,
+            mnt: sumTot / 1000.0
+          });
+        }
+        aggregatedCurve[y] = pts;
+      });
+    }
+
+    function getPointVal(p) {
+      if (!p) return 0;
+      let valKmt = 0;
+      if (currentCategory === 'acc') valKmt = p.acc_kmt || 0;
+      else if (currentCategory === 'out') valKmt = p.out_kmt || 0;
+      else valKmt = p.tot_kmt || p.kmt || 0;
+      return currentUnit === 'kmt' ? valKmt : (valKmt / 1000.0);
+    }
+
+    function updateView() {
+      const pkg = COMMODITIES[currentCommodity];
+      if (!pkg) return;
+
+      computeAggregatedCurves();
+
+      const unitLabel = currentUnit === 'mnt' ? 'mn t' : '1,000 MT';
+      const labelText = document.getElementById('dest-btn-label').textContent;
+
+      let catTitle = 'Total Commitments';
+      if (currentCategory === 'acc') catTitle = 'Accumulated Exports (Shipments)';
+      else if (currentCategory === 'out') catTitle = 'Outstanding Sales (Unshipped)';
+      else if (currentCategory === 'pacing') catTitle = 'USDA Target Pacing Trajectory';
+
+      document.getElementById('chart-title').textContent = `US ${pkg.commodity} Export Sales: ${catTitle} &mdash; ${labelText} (${unitLabel})`;
+      document.getElementById('page-title').textContent = `US ${pkg.commodity} Export Sales Seasonal Progress & Pacing`;
+
+      const cmyKey = '2025-26';
+      const nmyKey = '2026-27';
+      const compKey = '2024-25';
+
+      document.getElementById('kpi-cmy-title').textContent = `Total Commitments (${cmyKey})`;
+      document.getElementById('kpi-nmy-title').textContent = `New Crop Bookings (${nmyKey})`;
+
+      const cmyPts = aggregatedCurve[cmyKey] || [];
+      const compPts = aggregatedCurve[compKey] || [];
+      const nmyPts = aggregatedCurve[nmyKey] || [];
+
+      const latestCmy = cmyPts.length > 0 ? cmyPts[cmyPts.length - 1] : null;
+      const latestNmy = nmyPts.length > 0 ? nmyPts[nmyPts.length - 1] : null;
+      const sameWeekComp = (latestCmy && compPts.length >= cmyPts.length) ? compPts[cmyPts.length - 1] : null;
+
+      if (latestCmy) {
+        const v = currentUnit === 'kmt' ? (latestCmy.tot_kmt || latestCmy.kmt) : (latestCmy.tot_kmt || latestCmy.kmt)/1000.0;
+        document.getElementById('kpi-cmy-tot').textContent = fmtVal(v, true);
+        document.getElementById('kpi-cmy-breakdown').textContent = `Date: ${latestCmy.date} (Week ${cmyPts.length})`;
+      } else {
+        document.getElementById('kpi-cmy-tot').textContent = '--';
+      }
+
+      if (latestNmy) {
+        const v = currentUnit === 'kmt' ? (latestNmy.tot_kmt || latestNmy.kmt) : (latestNmy.tot_kmt || latestNmy.kmt)/1000.0;
+        document.getElementById('kpi-nmy-tot').textContent = fmtVal(v, true);
+        const netStr = fmtVal(currentUnit === 'kmt' ? latestNmy.net_kmt : (latestNmy.net_kmt/1000), true);
+        document.getElementById('kpi-nmy-net').textContent = `Latest Week Net: ${latestNmy.net_kmt > 0 ? '+' : ''}${netStr}`;
+      } else {
+        document.getElementById('kpi-nmy-tot').textContent = '--';
+        document.getElementById('kpi-nmy-net').textContent = 'None';
+      }
+
+      if (latestCmy && sameWeekComp) {
+        const diff = (latestCmy.tot_kmt || latestCmy.kmt) - (sameWeekComp.tot_kmt || sameWeekComp.kmt);
+        const pct = (sameWeekComp.tot_kmt || sameWeekComp.kmt) > 0 ? (diff / (sameWeekComp.tot_kmt || sameWeekComp.kmt) * 100) : 0;
+        const diffVal = currentUnit === 'kmt' ? diff : (diff / 1000);
+        const diffStr = (diff >= 0 ? '+' : '') + fmtVal(diffVal, true);
+        const diffElem = document.getElementById('kpi-yoy-diff');
+        diffElem.textContent = diffStr;
+        diffElem.className = 'text-2xl font-extrabold mt-1 ' + (diff >= 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-600 dark:text-rose-400');
+        
+        const priorStr = fmtVal(currentUnit === 'kmt' ? (sameWeekComp.tot_kmt || sameWeekComp.kmt) : (sameWeekComp.tot_kmt || sameWeekComp.kmt)/1000.0, true);
+        document.getElementById('kpi-yoy-pct').textContent = `vs ${priorStr} (${diff >= 0 ? '+' : ''}${pct.toFixed(1)}%)`;
+      } else {
+        document.getElementById('kpi-yoy-diff').textContent = '--';
+        document.getElementById('kpi-yoy-pct').textContent = 'No prior comparison';
+      }
+
+      const totalDest = pkg.data['total'];
+      if (totalDest && latestCmy && totalDest.curves[cmyKey]) {
+        const totVal = totalDest.curves[cmyKey][totalDest.curves[cmyKey].length - 1].tot_kmt;
+        const curVal = (latestCmy.tot_kmt || latestCmy.kmt);
+        const share = totVal > 0 ? (curVal / totVal * 100).toFixed(1) : '0.0';
+        document.getElementById('kpi-share').textContent = `${share}%`;
+        document.getElementById('kpi-share-desc').textContent = `of US ${fmtVal(currentUnit === 'kmt' ? totVal : totVal/1000, true)} total`;
+      } else {
+        document.getElementById('kpi-share').textContent = '--';
+      }
+
+      // Target Banner and Toggle Button Visibility (Restricted to All Destinations)
+      const allDests = isAllDestsSelected();
+      const targetBanner = document.getElementById('chart-target-banner');
+      const targetBtn = document.getElementById('btn-toggle-target-line');
+      
+      if (allDests) {
+        if (targetBanner) targetBanner.style.display = 'flex';
+        if (targetBtn) {
+          targetBtn.style.display = 'flex';
+          const pNmy = pkg.usda_pacing['nmy_2026_27'];
+          const tgtVal = currentUnit === 'kmt' ? pNmy.target_kmt : pNmy.target_mnt;
+          document.getElementById('target-line-btn-text').textContent = `🎯 2026/27 USDA Target Trajectory (${fmtVal(tgtVal, true)} ${unitLabel})`;
+          document.getElementById('target-banner-desc').textContent = `Official 2026/27 export target: ${fmtVal(tgtVal, true)} ${unitLabel} (${pNmy.commitments_pct.toFixed(1)}% booked)`;
+          document.getElementById('target-banner-req-sales').textContent = `Req. Weekly Sales Pace: ${pNmy.req_weekly_sales_pace_label}`;
+          document.getElementById('target-banner-progress').textContent = `Pace: ${pNmy.pace_status.toUpperCase()} (5-Yr Avg: ${pNmy.hist_5yr_pct.toFixed(1)}%)`;
+        }
+      } else {
+        if (targetBanner) targetBanner.style.display = 'none';
+        if (targetBtn) targetBtn.style.display = 'none';
+      }
+
+      drawChart();
+      render8RowTable();
+      renderProgressionTable();
+      renderPacingTracker();
+    }
+
+    // Professional Nice Scale Generator for Y-Axis
+    function getNiceScale(maxVal, targetTicks = 5) {
+      if (maxVal <= 0) maxVal = 10;
+      const rawStep = maxVal / targetTicks;
+      const magnitude = Math.pow(10, Math.floor(Math.log10(rawStep)));
+      const fraction = rawStep / magnitude;
+      let niceFraction;
+      if (fraction <= 1.0) niceFraction = 1;
+      else if (fraction <= 2.0) niceFraction = 2;
+      else if (fraction <= 2.5) niceFraction = 2.5;
+      else if (fraction <= 5.0) niceFraction = 5;
+      else niceFraction = 10;
+      const step = niceFraction * magnitude;
+      const niceMax = Math.ceil(maxVal / step) * step;
+      const ticks = [];
+      let t = 0;
+      while (t <= niceMax + 1e-6) {
+        ticks.push(Number(t.toFixed(4)));
+        t += step;
+      }
+      return { min: 0, max: niceMax, step: step, ticks: ticks };
+    }
+
+    function drawChart() {
+      const canvas = document.getElementById('seasonalChart');
+      if (!canvas) return;
+      const ctx = canvas.getContext('2d');
+      const dpr = window.devicePixelRatio || 1;
+
+      const rect = canvas.getBoundingClientRect();
+      canvas.width = rect.width * dpr;
+      canvas.height = rect.height * dpr;
+      ctx.scale(dpr, dpr);
+
+      const W = rect.width;
+      const H = rect.height;
+      const padding = { top: 36, right: 40, bottom: 62, left: 78 };
+      const plotW = W - padding.left - padding.right;
+      const plotH = H - padding.top - padding.bottom;
+
+      ctx.clearRect(0, 0, W, H);
+
+      const pkg = COMMODITIES[currentCommodity];
+      const pNmy = pkg.usda_pacing['nmy_2026_27'];
+      const tgt2627Kmt = pNmy.target_kmt;
+      const allDests = isAllDestsSelected();
+
+      let maxVal = 0;
+      ALL_YEARS.forEach(y => {
+        if (!YEAR_CONFIG[y].visible) return;
+        const pts = aggregatedCurve[y] || [];
+        pts.forEach(p => {
+          const v = getPointVal(p);
+          if (v > maxVal) maxVal = v;
+        });
+      });
+
+      // ONLY factor in target peak when all destinations are selected AND target line is enabled!
+      if (allDests && showTargetLine && (currentCategory === 'tot' || currentCategory === 'pacing')) {
+        const targetPeak = currentUnit === 'kmt' ? tgt2627Kmt : (tgt2627Kmt / 1000.0);
+        if (targetPeak > maxVal) maxVal = targetPeak;
+      }
+
+      if (maxVal === 0) maxVal = 10;
+
+      // Calculate clean, uniform nice scale
+      const niceScale = getNiceScale(maxVal, 5);
+      const yMax = niceScale.max;
+
+      // Y-Axis Grid Lines & Numbers
+      ctx.fillStyle = '#64748b';
+      ctx.font = '11px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
+      ctx.textAlign = 'right';
+
+      niceScale.ticks.forEach(tickVal => {
+        const yPos = padding.top + plotH - (tickVal / yMax) * plotH;
+        
+        ctx.beginPath();
+        ctx.moveTo(padding.left, yPos);
+        ctx.lineTo(W - padding.right, yPos);
+        if (tickVal === 0) {
+          ctx.strokeStyle = '#94a3b8';
+          ctx.lineWidth = 1.5;
+          ctx.setLineDash([]);
+        } else {
+          ctx.strokeStyle = '#e2e8f0';
+          ctx.lineWidth = 1;
+          ctx.setLineDash([4, 4]);
+        }
+        ctx.stroke();
+
+        let labelStr = '';
+        if (currentUnit === 'kmt') {
+          labelStr = Math.round(tickVal).toLocaleString();
+        } else {
+          labelStr = (tickVal % 1 === 0) ? tickVal.toFixed(0) : tickVal.toFixed(1);
+        }
+        ctx.fillText(labelStr, padding.left - 10, yPos + 3.5);
+      });
+      ctx.setLineDash([]);
+
+      // X-Axis Timeline & Period Labels
+      const labels = pkg.timeline_labels || [];
+      const totalPoints = labels.length;
+      const baseline = padding.top + plotH;
+      const kickoffIdx = 22; // Week 22 is official MY kickoff (Sep 1 for corn/soy/meal/oil, Jun 1 for wheat)
+      const xKickoff = padding.left + (plotW / (totalPoints - 1)) * kickoffIdx;
+
+      // Subtle Background Shading for Pre-Season Forward Bookings Window
+      ctx.fillStyle = 'rgba(241, 245, 249, 0.5)';
+      ctx.fillRect(padding.left, padding.top, xKickoff - padding.left, plotH);
+
+      // Baseline rule
+      ctx.strokeStyle = '#94a3b8';
+      ctx.lineWidth = 1.5;
+      ctx.beginPath();
+      ctx.moveTo(padding.left, baseline);
+      ctx.lineTo(W - padding.right, baseline);
+      ctx.stroke();
+
+      // Extract True Month Boundaries (Uniform ~4-5 weeks spacing)
+      const monthBoundaries = [];
+      let prevM = '';
+      for (let i = 0; i < totalPoints; i++) {
+        const l = labels[i];
+        const m = (typeof l === 'object' && l !== null) ? l.month : String(l).substring(0, 3);
+        if (m !== prevM) {
+          monthBoundaries.push({ index: i, month: m });
+          prevM = m;
+        }
+      }
+
+      // Draw Vertical Guidelines, Ticks, and Month Labels
+      const isNarrowScreen = (plotW < 600);
+      monthBoundaries.forEach((mb, bIdx) => {
+        const xPos = padding.left + (plotW / (totalPoints - 1)) * mb.index;
+        const isKickoff = (mb.index === kickoffIdx);
+        const isClose = (bIdx === monthBoundaries.length - 1);
+        const shouldShowLabel = !isNarrowScreen || (bIdx % 2 === 0) || isKickoff || isClose;
+
+        // Vertical subtle grid line inside chart
+        ctx.beginPath();
+        ctx.moveTo(xPos, padding.top);
+        ctx.lineTo(xPos, baseline);
+        if (isKickoff) {
+          ctx.strokeStyle = '#93c5fd';
+          ctx.lineWidth = 1.5;
+          ctx.setLineDash([4, 4]);
+        } else {
+          ctx.strokeStyle = '#f1f5f9';
+          ctx.lineWidth = 1;
+          ctx.setLineDash([2, 4]);
+        }
+        ctx.stroke();
+        ctx.setLineDash([]);
+
+        // Tick mark on axis
+        ctx.beginPath();
+        ctx.moveTo(xPos, baseline);
+        ctx.lineTo(xPos, baseline + (isKickoff ? 8 : 5));
+        ctx.strokeStyle = isKickoff ? '#2563eb' : '#94a3b8';
+        ctx.lineWidth = isKickoff ? 2 : 1;
+        ctx.stroke();
+
+        // Month text
+        if (shouldShowLabel) {
+          ctx.textAlign = 'center';
+          if (isKickoff) {
+            ctx.fillStyle = '#2563eb';
+            ctx.font = 'bold 11px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
+            ctx.fillText(mb.month, xPos, baseline + 18);
+          } else if (isClose) {
+            ctx.fillStyle = '#dc2626';
+            ctx.font = 'bold 11px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
+            ctx.fillText(mb.month, xPos, baseline + 18);
+          } else {
+            ctx.fillStyle = '#475569';
+            ctx.font = '500 11px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
+            ctx.fillText(mb.month, xPos, baseline + 18);
+          }
+        }
+      });
+
+      // Secondary Phase Bar & Badges Below Month Labels
+      const myStartName = (currentCommodity === 'wheat') ? 'Jun 1' : 'Sep 1';
+      const myEndName = (currentCommodity === 'wheat') ? 'May 31' : 'Aug 31';
+
+      // 1. Pre-Season / Forward Sales Segment
+      const centerNC = (padding.left + xKickoff) / 2;
+      ctx.textAlign = 'center';
+      ctx.fillStyle = '#64748b';
+      ctx.font = '600 10px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
+      ctx.fillText('🌱 Forward Sales Window (22 Wks)', centerNC, baseline + 36);
+
+      // Subtle bracket for Forward Sales
+      ctx.strokeStyle = '#cbd5e1';
+      ctx.lineWidth = 1;
+      ctx.beginPath();
+      ctx.moveTo(padding.left + 8, baseline + 25);
+      ctx.lineTo(xKickoff - 8, baseline + 25);
+      ctx.stroke();
+
+      // 2. Official Marketing Year Segment
+      const centerMY = (xKickoff + W - padding.right) / 2;
+      ctx.fillStyle = '#1e293b';
+      ctx.font = 'bold 10px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
+      ctx.fillText(`🚢 Official Marketing Year: ${myStartName} – ${myEndName} (52 Wks)`, centerMY, baseline + 36);
+
+      // Subtle bracket for Active MY
+      ctx.strokeStyle = '#93c5fd';
+      ctx.lineWidth = 1.5;
+      ctx.beginPath();
+      ctx.moveTo(xKickoff + 8, baseline + 25);
+      ctx.lineTo(W - padding.right - 8, baseline + 25);
+      ctx.stroke();
+
+      // MY Kickoff Marker at top of chart
+      ctx.fillStyle = '#2563eb';
+      ctx.font = 'bold 10px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
+      ctx.textAlign = 'left';
+      ctx.fillText(`▲ MY Kickoff (${myStartName})`, xKickoff + 6, padding.top + 14);
+
+      // 1. Draw Historical & Current Marketing Year Curves
+      ALL_YEARS.forEach(y => {
+        const cfg = YEAR_CONFIG[y];
+        if (!cfg.visible) return;
+        const pts = aggregatedCurve[y] || [];
+        if (pts.length === 0) return;
+
+        ctx.strokeStyle = cfg.color;
+        ctx.lineWidth = cfg.width;
+        if (y === '2026-27') ctx.setLineDash([5, 3]);
+        else ctx.setLineDash([]);
+
+        ctx.beginPath();
+        pts.forEach((p, idx) => {
+          const v = getPointVal(p);
+          const x = padding.left + (plotW / (totalPoints - 1)) * idx;
+          const yPos = padding.top + plotH - (v / yMax) * plotH;
+          if (idx === 0) ctx.moveTo(x, yPos);
+          else ctx.lineTo(x, yPos);
+        });
+        ctx.stroke();
+
+        const lastPt = pts[pts.length - 1];
+        const lastIdx = pts.length - 1;
+        const lastV = getPointVal(lastPt);
+        const lastX = padding.left + (plotW / (totalPoints - 1)) * lastIdx;
+        const lastY = padding.top + plotH - (lastV / yMax) * plotH;
+
+        ctx.beginPath();
+        ctx.arc(lastX, lastY, (y === '2025-26' || y === '2026-27') ? 5 : 3, 0, Math.PI * 2);
+        ctx.fillStyle = cfg.color;
+        ctx.fill();
+      });
+
+      // 2. Draw USDA Target Trajectory Line (ONLY when All Destinations are selected!)
+      if (allDests && showTargetLine && pkg.target_pace_curves && pkg.target_pace_curves['2026-27'] && (currentCategory === 'tot' || currentCategory === 'pacing')) {
+        const tgtPts = pkg.target_pace_curves['2026-27'];
+        
+        ctx.strokeStyle = '#d97706'; // Amber 600
+        ctx.lineWidth = 2.8;
+        ctx.setLineDash([6, 4]);
+        ctx.beginPath();
+
+        tgtPts.forEach((tp, idx) => {
+          const v = currentUnit === 'kmt' ? tp.kmt : tp.mnt;
+          const x = padding.left + (plotW / (totalPoints - 1)) * idx;
+          const yPos = padding.top + plotH - (v / yMax) * plotH;
+          if (idx === 0) ctx.moveTo(x, yPos);
+          else ctx.lineTo(x, yPos);
+        });
+        ctx.stroke();
+
+        // Horizontal Target Reference Guideline
+        const targetPeak = currentUnit === 'kmt' ? tgt2627Kmt : (tgt2627Kmt / 1000.0);
+        const peakY = padding.top + plotH - (targetPeak / yMax) * plotH;
+
+        ctx.strokeStyle = '#f59e0b'; // Amber 500
+        ctx.lineWidth = 1.5;
+        ctx.setLineDash([2, 4]);
+        ctx.beginPath();
+        ctx.moveTo(padding.left, peakY);
+        ctx.lineTo(W - padding.right, peakY);
+        ctx.stroke();
+
+        ctx.fillStyle = '#b45309';
+        ctx.font = 'bold 10px sans-serif';
+        ctx.textAlign = 'right';
+        ctx.fillText(`🎯 USDA 2026/27 Target: ${fmtVal(targetPeak, true)} ${currentUnit === 'kmt' ? 'k MT' : 'mn t'}`, W - padding.right, peakY - 5);
+      }
+
+      ctx.setLineDash([]);
+    }
+
+    function setupCanvasEvents() {
+      const canvas = document.getElementById('seasonalChart');
+      canvas.addEventListener('mousemove', (e) => {
+        const rect = canvas.getBoundingClientRect();
+        handleChartHover(e.clientX - rect.left, e.clientY - rect.top, rect);
+      });
+      canvas.addEventListener('mouseleave', () => {
+        hideTooltip();
+      });
+    }
+
+    function handleChartHover(mouseX, mouseY, rect) {
+      const tooltip = document.getElementById('chart-tooltip');
+      const padding = { top: 36, right: 40, bottom: 62, left: 78 };
+      const plotW = rect.width - padding.left - padding.right;
+
+      if (mouseX < padding.left || mouseX > rect.width - padding.right) {
+        hideTooltip();
+        return;
+      }
+
+      const pkg = COMMODITIES[currentCommodity];
+      const totalPoints = pkg.timeline_labels.length;
+      const idx = Math.round(((mouseX - padding.left) / plotW) * (totalPoints - 1));
+      if (idx < 0 || idx >= totalPoints) {
+        hideTooltip();
+        return;
+      }
+
+      const l = pkg.timeline_labels[idx];
+      const periodLabel = (typeof l === 'object' && l !== null) ? (l.label || l.month) : String(l);
+      const unitStr = currentUnit === 'kmt' ? 'k MT' : 'mn t';
+      const allDests = isAllDestsSelected();
+
+      const isForward = idx < 22;
+      const myWeekStr = isForward ? `NC Forward Wk ${idx + 1}` : `MY Week ${idx - 21}`;
+      const phaseBadge = isForward ? '🌱 New Crop Forward' : '🚢 Active Marketing Year';
+
+      let rows = `<div class="font-bold border-b border-slate-700 pb-1 mb-1.5 flex justify-between items-center text-xs">
+        <span>${periodLabel} &bull; ${myWeekStr}</span>
+        <span class="text-[10px] px-1.5 py-0.5 rounded ${isForward ? 'bg-amber-950/60 text-amber-300 border border-amber-800' : 'bg-blue-950/60 text-blue-300 border border-blue-800'}">${phaseBadge}</span>
+      </div>`;
+
+      // Target Pace benchmark row (Only when all destinations are selected)
+      if (allDests && showTargetLine && pkg.target_pace_curves && pkg.target_pace_curves['2026-27'] && idx < pkg.target_pace_curves['2026-27'].length) {
+        const tp = pkg.target_pace_curves['2026-27'][idx];
+        const v = currentUnit === 'kmt' ? tp.kmt : tp.mnt;
+        rows += `
+          <div class="flex items-center justify-between gap-3 text-[11px] text-amber-300 font-semibold mb-1 pb-1 border-b border-slate-800">
+            <span class="flex items-center gap-1.5">
+              <span class="w-2 h-2 rounded-full bg-amber-400"></span>
+              <span>🎯 26/27 Target Pace (${tp.pct}%):</span>
+            </span>
+            <span>${fmtVal(v, currentUnit === 'kmt')} ${unitStr}</span>
+          </div>
+        `;
+      }
+
+      let hasData = false;
+      ALL_YEARS.forEach(y => {
+        if (!YEAR_CONFIG[y].visible) return;
+        const pts = aggregatedCurve[y] || [];
+        if (idx < pts.length) {
+          hasData = true;
+          const v = getPointVal(pts[idx]);
+          rows += `
+            <div class="flex items-center justify-between gap-3 text-[11px]">
+              <span class="flex items-center gap-1.5">
+                <span class="w-2 h-2 rounded-full" style="background-color: ${YEAR_CONFIG[y].color}"></span>
+                <span>${y}:</span>
+              </span>
+              <span class="font-bold ${y === '2025-26' ? 'text-blue-400' : (y === '2026-27' ? 'text-emerald-400' : '')}">${fmtVal(v, currentUnit === 'kmt')} ${unitStr}</span>
+            </div>
+          `;
+        }
+      });
+
+      if (!hasData) {
+        hideTooltip();
+        return;
+      }
+
+      tooltip.innerHTML = rows;
+      tooltip.classList.remove('hidden');
+
+      const tooltipW = tooltip.offsetWidth;
+      let left = mouseX + 15;
+      if (left + tooltipW > rect.width) left = mouseX - tooltipW - 15;
+      tooltip.style.left = `${left}px`;
+      tooltip.style.top = `${Math.max(10, mouseY - 40)}px`;
+    }
+
+    function hideTooltip() {
+      const tooltip = document.getElementById('chart-tooltip');
+      if (tooltip) tooltip.classList.add('hidden');
+    }
+
+    function render8RowTable() {
+      const pkg = COMMODITIES[currentCommodity];
+      const tbody = document.getElementById('table-8rows-tbody');
+      if (!pkg || !tbody) return;
+
+      tbody.innerHTML = '';
+      const isKmt = currentUnit === 'kmt';
+
+      document.getElementById('table-8rows-title').textContent = `Latest USDA Export Sales Release &mdash; ${pkg.commodity} Top 10 Destinations & Commercial Breakdown`;
+
+      const rows = pkg.table_8rows || [];
+      rows.forEach(r => {
+        const tr = document.createElement('tr');
+        const isDest = !r.is_total && r.name !== 'Remaining Destinations';
+        
+        if (r.is_total) {
+          tr.className = 'bg-blue-50/80 dark:bg-blue-950/40 font-bold border-t-2 border-blue-300 dark:border-blue-700 text-blue-950 dark:text-blue-200';
+        } else {
+          tr.className = 'hover:bg-slate-100 dark:hover:bg-slate-800/60 transition-colors cursor-pointer';
+        }
+
+        const acc = isKmt ? (r.acc_cmy / 1000) : (r.acc_cmy / 1000000);
+        const out = isKmt ? (r.out_cmy / 1000) : (r.out_cmy / 1000000);
+        const tot = isKmt ? (r.tot_cmy / 1000) : (r.tot_cmy / 1000000);
+        const netCmy = isKmt ? (r.net_cmy / 1000) : (r.net_cmy / 1000000);
+        const netNmy = isKmt ? (r.net_nmy / 1000) : (r.net_nmy / 1000000);
+        const outNmy = isKmt ? (r.out_nmy / 1000) : (r.out_nmy / 1000000);
+
+        tr.innerHTML = `
+          <td class="py-2.5 px-3 font-semibold ${isDest ? 'text-blue-600 dark:text-blue-400 hover:underline' : ''}" ${isDest ? `onclick="selectDestByName('${r.name}')"` : ''}>
+            ${r.name}
+          </td>
+          <td class="py-2.5 px-3 text-right font-mono">${fmtVal(acc, isKmt)}</td>
+          <td class="py-2.5 px-3 text-right font-mono">${fmtVal(out, isKmt)}</td>
+          <td class="py-2.5 px-3 text-right font-bold font-mono text-blue-700 dark:text-blue-400">${fmtVal(tot, isKmt)}</td>
+          <td class="py-2.5 px-3 text-right font-medium font-mono ${netCmy >= 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-600 dark:text-rose-400'}">${netCmy > 0 ? '+' : ''}${fmtVal(netCmy, isKmt)}</td>
+          <td class="py-2.5 px-3 text-right font-medium font-mono ${netNmy >= 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-600 dark:text-rose-400'}">${netNmy > 0 ? '+' : ''}${fmtVal(netNmy, isKmt)}</td>
+          <td class="py-2.5 px-3 text-right font-bold font-mono text-rose-600 dark:text-rose-400">${fmtVal(outNmy, isKmt)}</td>
+          <td class="py-2.5 px-3 text-center">
+            ${isDest ? `<button onclick="selectDestByName('${r.name}')" class="px-2 py-0.5 text-[10px] font-bold rounded bg-blue-50 text-blue-700 border border-blue-200 hover:bg-blue-100">📍 Chart</button>` : `<span class="text-slate-300">-</span>`}
+          </td>
+        `;
+        tbody.appendChild(tr);
+      });
+    }
+
+    function renderProgressionTable() {
+      const pkg = COMMODITIES[currentCommodity];
+      const thead = document.getElementById('prog-table-thead');
+      const tbody = document.getElementById('prog-table-tbody');
+      if (!pkg || !thead || !tbody) return;
+
+      const unitStr = currentUnit === 'kmt' ? '1,000 MT' : 'mn t';
+      const isKmt = currentUnit === 'kmt';
+
+      let catTitle = 'Total Commitments';
+      if (currentCategory === 'acc') catTitle = 'Accumulated Exports';
+      else if (currentCategory === 'out') catTitle = 'Outstanding Sales';
+
+      document.getElementById('prog-table-title').textContent = `11-Year ${catTitle} Progression Log (${unitStr})`;
+
+      let headRow = '<tr><th class="py-2 px-3">Timeline Week</th><th class="py-2 px-3">Period Label</th>';
+      ALL_YEARS.forEach(y => {
+        if (YEAR_CONFIG[y].visible) {
+          headRow += `<th class="py-2 px-3 text-right" style="color: ${YEAR_CONFIG[y].color}">${y}</th>`;
+        }
+      });
+      headRow += '</tr>';
+      thead.innerHTML = headRow;
+
+      const labels = pkg.timeline_labels || [];
+      tbody.innerHTML = '';
+
+      labels.forEach((l, i) => {
+        const periodLabel = (typeof l === 'object' && l !== null) ? (l.label || l.month) : String(l);
+        let row = `<tr><td class="py-1.5 px-3 font-semibold">Week ${i + 1}</td><td class="py-1.5 px-3 text-slate-500">${periodLabel}</td>`;
+        ALL_YEARS.forEach(y => {
+          if (YEAR_CONFIG[y].visible) {
+            const pts = aggregatedCurve[y] || [];
+            if (i < pts.length) {
+              const v = getPointVal(pts[i]);
+              row += `<td class="py-1.5 px-3 text-right font-medium font-mono">${fmtVal(v, isKmt)}</td>`;
+            } else {
+              row += `<td class="py-1.5 px-3 text-right text-slate-300 dark:text-slate-700">-</td>`;
+            }
+          }
+        });
+        row += '</tr>';
+        tbody.innerHTML += row;
+      });
+    }
+
+    function renderPacingTracker() {
+      const pkg = COMMODITIES[currentCommodity];
+      if (!pkg || !pkg.usda_pacing) return;
+
+      const pData = pkg.usda_pacing[currentPacingYear];
+      if (!pData) return;
+
+      const isNmy = currentPacingYear === 'nmy_2026_27';
+      const isKmt = currentUnit === 'kmt';
+
+      const tgt = isKmt ? pData.target_kmt : pData.target_mnt;
+      const commit = isKmt ? pData.commitments_kmt : pData.commitments_mnt;
+      const reqShip = isKmt ? pData.req_weekly_shipment_pace_kmt : pData.req_weekly_shipment_pace_mnt;
+
+      document.getElementById('pacing-card1-title').textContent = `${pData.year_code} USDA Target`;
+      document.getElementById('pacing-card1-val').textContent = `${fmtVal(tgt, isKmt)} ${isKmt ? 'k MT' : 'mn t'}`;
+      document.getElementById('pacing-card1-sub').textContent = pData.status_desc;
+
+      document.getElementById('pacing-card2-title').textContent = isNmy ? 'New Crop Bookings' : 'Total Commitments';
+      document.getElementById('pacing-card2-val').textContent = `${fmtVal(commit, isKmt)} ${isKmt ? 'k MT' : 'mn t'}`;
+      document.getElementById('pacing-card2-sub').textContent = `${pData.commitments_pct.toFixed(1)}% of USDA Target`;
+
+      // Req Weekly Sales Pace
+      document.getElementById('pacing-card3-title').textContent = isNmy ? 'Req. Weekly Sales Pace' : 'Close-out Sales Req.';
+      if (pData.req_weekly_sales_pace_kmt === 0) {
+        document.getElementById('pacing-card3-val').textContent = isNmy ? '0 k MT/wk' : 'Target Met';
+        document.getElementById('pacing-card3-sub').textContent = pData.req_weekly_sales_pace_label;
+      } else {
+        const reqVal = isKmt ? pData.req_weekly_sales_pace_kmt : pData.req_weekly_sales_pace_mnt;
+        document.getElementById('pacing-card3-val').textContent = `${fmtVal(reqVal, isKmt)} ${isKmt ? 'k MT' : 'mn t'}/wk`;
+        document.getElementById('pacing-card3-sub').textContent = `${pData.remaining_weeks} weeks remaining in season`;
+      }
+
+      // Req Weekly Shipments Pace
+      document.getElementById('pacing-card4-val').textContent = `${fmtVal(reqShip, isKmt)} ${isKmt ? 'k MT' : 'mn t'}/wk`;
+      document.getElementById('pacing-card4-sub').textContent = `${pData.remaining_weeks} weeks to hit shipment target`;
+
+      // Gauge bar
+      document.getElementById('gauge-commodity-title').textContent = `${pkg.commodity} (${pData.year_code}) Pacing Status`;
+      const badge = document.getElementById('gauge-status-badge');
+      if (pData.pace_status === 'ahead') {
+        badge.className = 'px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-emerald-100 text-emerald-800';
+        badge.textContent = '● Ahead of 5-Yr Pace';
+      } else if (pData.pace_status === 'on_track') {
+        badge.className = 'px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-blue-100 text-blue-800';
+        badge.textContent = '● On Track';
+      } else {
+        badge.className = 'px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-amber-100 text-amber-800';
+        badge.textContent = '▲ Lagging Pacing Target';
+      }
+
+      document.getElementById('gauge-numbers-desc').textContent = 
+        `Booked: ${fmtVal(commit, isKmt)} ${isKmt ? 'k MT' : 'mn t'} (${pData.commitments_pct.toFixed(1)}%) vs 5-Yr Avg: ${pData.hist_5yr_pct.toFixed(1)}%`;
+
+      const pctWidth = Math.min(100, Math.max(2, pData.commitments_pct));
+      document.getElementById('progress-bar-current').style.width = `${pctWidth}%`;
+      const marker5yr = Math.min(100, Math.max(0, pData.hist_5yr_pct));
+      document.getElementById('progress-marker-5yr').style.left = `${marker5yr}%`;
+      document.getElementById('label-marker-5yr').textContent = `▲ 5-Yr Avg Pace (${pData.hist_5yr_pct.toFixed(1)}%)`;
+
+      renderPacingMatrixTable();
+    }
+
+    function renderPacingMatrixTable() {
+      const tbody = document.getElementById('pacing-matrix-tbody');
+      if (!tbody) return;
+      tbody.innerHTML = '';
+
+      const isKmt = currentUnit === 'kmt';
+      const cKeys = ['corn', 'soybeans', 'wheat', 'meal', 'oil'];
+
+      cKeys.forEach(k => {
+        const item = COMMODITIES[k];
+        if (!item || !item.usda_pacing) return;
+        const d = item.usda_pacing[currentPacingYear];
+        if (!d) return;
+
+        const isCurrent = k === currentCommodity;
+        const tr = document.createElement('tr');
+        tr.className = `cursor-pointer transition-colors ${
+          isCurrent ? 'bg-blue-50/70 dark:bg-blue-950/40 font-semibold' : 'hover:bg-slate-50 dark:hover:bg-slate-800/40'
+        }`;
+        tr.onclick = () => switchCommodity(k);
+
+        const tgt = isKmt ? d.target_kmt : d.target_mnt;
+        const commit = isKmt ? d.commitments_kmt : d.commitments_mnt;
+        const reqSales = isKmt ? d.req_weekly_sales_pace_kmt : d.req_weekly_sales_pace_mnt;
+        const reqShip = isKmt ? d.req_weekly_shipment_pace_kmt : d.req_weekly_shipment_pace_mnt;
+
+        let badgeHtml = '';
+        if (d.pace_status === 'ahead') {
+          badgeHtml = '<span class="px-2 py-0.5 rounded text-[10px] font-bold bg-emerald-100 text-emerald-800">Ahead</span>';
+        } else if (d.pace_status === 'on_track') {
+          badgeHtml = '<span class="px-2 py-0.5 rounded text-[10px] font-bold bg-blue-100 text-blue-800">On Track</span>';
+        } else {
+          badgeHtml = '<span class="px-2 py-0.5 rounded text-[10px] font-bold bg-amber-100 text-amber-800">Lagging</span>';
+        }
+
+        const salesReqText = (d.req_weekly_sales_pace_kmt === 0) ? 
+          '<span class="text-emerald-600 dark:text-emerald-400 font-bold">Target Met</span>' : 
+          `${fmtVal(reqSales, isKmt)} ${isKmt ? 'k' : 'mn'}/wk`;
+
+        tr.innerHTML = `
+          <td class="py-2.5 px-3 flex items-center gap-1.5 font-bold text-slate-800 dark:text-slate-100">
+            ${isCurrent ? '▶ ' : ''}${item.commodity}
+          </td>
+          <td class="py-2.5 px-3 text-slate-500">${d.year_code}</td>
+          <td class="py-2.5 px-3 text-slate-600 dark:text-slate-400">${d.status_desc}</td>
+          <td class="py-2.5 px-3 text-right font-mono">${fmtVal(tgt, isKmt)}</td>
+          <td class="py-2.5 px-3 text-right font-mono font-bold text-blue-700 dark:text-blue-400">${fmtVal(commit, isKmt)}</td>
+          <td class="py-2.5 px-3 text-right font-mono font-semibold">${d.commitments_pct.toFixed(1)}%</td>
+          <td class="py-2.5 px-3 text-right font-mono text-slate-500">${d.hist_5yr_pct.toFixed(1)}%</td>
+          <td class="py-2.5 px-3 text-right font-mono font-bold text-indigo-700 dark:text-indigo-400">${salesReqText}</td>
+          <td class="py-2.5 px-3 text-right font-mono">${fmtVal(reqShip, isKmt)} ${isKmt ? 'k' : 'mn'}/wk</td>
+          <td class="py-2.5 px-3 text-center">${badgeHtml}</td>
+        `;
+        tbody.appendChild(tr);
+      });
+    }
+
+    function fmtVal(v, isKmt = true) {
+      if (v === undefined || v === null || isNaN(v)) return '--';
+      if (isKmt) {
+        return Math.round(v).toLocaleString();
+      } else {
+        return (v >= 100 || v % 1 === 0) ? v.toFixed(0) : v.toFixed(2);
+      }
+    }
+
+    function toggleDestDropdown() {
+      const panel = document.getElementById('dest-dropdown-panel');
+      panel.classList.toggle('hidden');
+    }
+
+    document.addEventListener('click', (e) => {
+      const wrapper = document.getElementById('dest-dropdown-wrapper');
+      if (wrapper && !wrapper.contains(e.target)) {
+        document.getElementById('dest-dropdown-panel').classList.add('hidden');
+      }
+    });
+
+    // Start App
+    window.addEventListener('DOMContentLoaded', init);
+  </script>
+</body>
+</html>
