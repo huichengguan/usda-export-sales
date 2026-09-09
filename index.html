@@ -955,7 +955,7 @@
 
       const W = rect.width;
       const H = rect.height;
-      const padding = { top: 35, right: 40, bottom: 55, left: 78 };
+      const padding = { top: 36, right: 40, bottom: 62, left: 78 };
       const plotW = W - padding.left - padding.right;
       const plotH = H - padding.top - padding.bottom;
 
@@ -1023,59 +1023,123 @@
       // X-Axis Timeline & Period Labels
       const labels = pkg.timeline_labels || [];
       const totalPoints = labels.length;
+      const baseline = padding.top + plotH;
+      const kickoffIdx = 22; // Week 22 is official MY kickoff (Sep 1 for corn/soy/meal/oil, Jun 1 for wheat)
+      const xKickoff = padding.left + (plotW / (totalPoints - 1)) * kickoffIdx;
 
+      // Subtle Background Shading for Pre-Season Forward Bookings Window
+      ctx.fillStyle = 'rgba(241, 245, 249, 0.5)';
+      ctx.fillRect(padding.left, padding.top, xKickoff - padding.left, plotH);
+
+      // Baseline rule
       ctx.strokeStyle = '#94a3b8';
       ctx.lineWidth = 1.5;
       ctx.beginPath();
-      ctx.moveTo(padding.left, padding.top + plotH);
-      ctx.lineTo(W - padding.right, padding.top + plotH);
+      ctx.moveTo(padding.left, baseline);
+      ctx.lineTo(W - padding.right, baseline);
       ctx.stroke();
 
-      ctx.textAlign = 'center';
-      ctx.fillStyle = '#334155';
-      ctx.font = '11px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
-
-      let lastPrintedMonth = '';
+      // Extract True Month Boundaries (Uniform ~4-5 weeks spacing)
+      const monthBoundaries = [];
+      let prevM = '';
       for (let i = 0; i < totalPoints; i++) {
         const l = labels[i];
-        const month = (typeof l === 'object' && l !== null) ? l.month : String(l).substring(0, 3);
-        const xPos = padding.left + (plotW / (totalPoints - 1)) * i;
-
-        if (month !== lastPrintedMonth && i % 3 === 0) {
-          lastPrintedMonth = month;
-          
-          ctx.beginPath();
-          ctx.moveTo(xPos, padding.top + plotH);
-          ctx.lineTo(xPos, padding.top + plotH + 5);
-          ctx.stroke();
-
-          let displayTxt = month;
-          if (i < 20) displayTxt = `${month} (NC)`;
-          else if (i >= 20 && i <= 24) displayTxt = `${month} (Kickoff)`;
-          else if (i >= totalPoints - 4) displayTxt = `${month} (Close)`;
-
-          ctx.fillText(displayTxt, xPos, padding.top + plotH + 18);
+        const m = (typeof l === 'object' && l !== null) ? l.month : String(l).substring(0, 3);
+        if (m !== prevM) {
+          monthBoundaries.push({ index: i, month: m });
+          prevM = m;
         }
       }
 
-      // Draw Marketing Year Kickoff boundary line
-      const kickoffIdx = currentCommodity === 'wheat' ? 22 : 21;
-      if (kickoffIdx < totalPoints) {
-        const kX = padding.left + (plotW / (totalPoints - 1)) * kickoffIdx;
-        ctx.strokeStyle = '#cbd5e1';
-        ctx.lineWidth = 1;
-        ctx.setLineDash([3, 3]);
+      // Draw Vertical Guidelines, Ticks, and Month Labels
+      const isNarrowScreen = (plotW < 600);
+      monthBoundaries.forEach((mb, bIdx) => {
+        const xPos = padding.left + (plotW / (totalPoints - 1)) * mb.index;
+        const isKickoff = (mb.index === kickoffIdx);
+        const isClose = (bIdx === monthBoundaries.length - 1);
+        const shouldShowLabel = !isNarrowScreen || (bIdx % 2 === 0) || isKickoff || isClose;
+
+        // Vertical subtle grid line inside chart
         ctx.beginPath();
-        ctx.moveTo(kX, padding.top);
-        ctx.lineTo(kX, padding.top + plotH);
+        ctx.moveTo(xPos, padding.top);
+        ctx.lineTo(xPos, baseline);
+        if (isKickoff) {
+          ctx.strokeStyle = '#93c5fd';
+          ctx.lineWidth = 1.5;
+          ctx.setLineDash([4, 4]);
+        } else {
+          ctx.strokeStyle = '#f1f5f9';
+          ctx.lineWidth = 1;
+          ctx.setLineDash([2, 4]);
+        }
         ctx.stroke();
         ctx.setLineDash([]);
 
-        ctx.fillStyle = '#64748b';
-        ctx.font = '9px sans-serif';
-        ctx.textAlign = 'left';
-        ctx.fillText('Active MY Kickoff', kX + 4, padding.top + 12);
-      }
+        // Tick mark on axis
+        ctx.beginPath();
+        ctx.moveTo(xPos, baseline);
+        ctx.lineTo(xPos, baseline + (isKickoff ? 8 : 5));
+        ctx.strokeStyle = isKickoff ? '#2563eb' : '#94a3b8';
+        ctx.lineWidth = isKickoff ? 2 : 1;
+        ctx.stroke();
+
+        // Month text
+        if (shouldShowLabel) {
+          ctx.textAlign = 'center';
+          if (isKickoff) {
+            ctx.fillStyle = '#2563eb';
+            ctx.font = 'bold 11px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
+            ctx.fillText(mb.month, xPos, baseline + 18);
+          } else if (isClose) {
+            ctx.fillStyle = '#dc2626';
+            ctx.font = 'bold 11px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
+            ctx.fillText(mb.month, xPos, baseline + 18);
+          } else {
+            ctx.fillStyle = '#475569';
+            ctx.font = '500 11px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
+            ctx.fillText(mb.month, xPos, baseline + 18);
+          }
+        }
+      });
+
+      // Secondary Phase Bar & Badges Below Month Labels
+      const myStartName = (currentCommodity === 'wheat') ? 'Jun 1' : 'Sep 1';
+      const myEndName = (currentCommodity === 'wheat') ? 'May 31' : 'Aug 31';
+
+      // 1. Pre-Season / Forward Sales Segment
+      const centerNC = (padding.left + xKickoff) / 2;
+      ctx.textAlign = 'center';
+      ctx.fillStyle = '#64748b';
+      ctx.font = '600 10px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
+      ctx.fillText('🌱 Forward Sales Window (22 Wks)', centerNC, baseline + 36);
+
+      // Subtle bracket for Forward Sales
+      ctx.strokeStyle = '#cbd5e1';
+      ctx.lineWidth = 1;
+      ctx.beginPath();
+      ctx.moveTo(padding.left + 8, baseline + 25);
+      ctx.lineTo(xKickoff - 8, baseline + 25);
+      ctx.stroke();
+
+      // 2. Official Marketing Year Segment
+      const centerMY = (xKickoff + W - padding.right) / 2;
+      ctx.fillStyle = '#1e293b';
+      ctx.font = 'bold 10px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
+      ctx.fillText(`🚢 Official Marketing Year: ${myStartName} – ${myEndName} (52 Wks)`, centerMY, baseline + 36);
+
+      // Subtle bracket for Active MY
+      ctx.strokeStyle = '#93c5fd';
+      ctx.lineWidth = 1.5;
+      ctx.beginPath();
+      ctx.moveTo(xKickoff + 8, baseline + 25);
+      ctx.lineTo(W - padding.right - 8, baseline + 25);
+      ctx.stroke();
+
+      // MY Kickoff Marker at top of chart
+      ctx.fillStyle = '#2563eb';
+      ctx.font = 'bold 10px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
+      ctx.textAlign = 'left';
+      ctx.fillText(`▲ MY Kickoff (${myStartName})`, xKickoff + 6, padding.top + 14);
 
       // 1. Draw Historical & Current Marketing Year Curves
       ALL_YEARS.forEach(y => {
@@ -1163,7 +1227,7 @@
 
     function handleChartHover(mouseX, mouseY, rect) {
       const tooltip = document.getElementById('chart-tooltip');
-      const padding = { top: 35, right: 40, bottom: 55, left: 78 };
+      const padding = { top: 36, right: 40, bottom: 62, left: 78 };
       const plotW = rect.width - padding.left - padding.right;
 
       if (mouseX < padding.left || mouseX > rect.width - padding.right) {
@@ -1184,9 +1248,13 @@
       const unitStr = currentUnit === 'kmt' ? 'k MT' : 'mn t';
       const allDests = isAllDestsSelected();
 
-      let rows = `<div class="font-bold border-b border-slate-700 pb-1 mb-1.5 flex justify-between">
-        <span>Week ${idx + 1} (${periodLabel})</span>
-        <span class="text-slate-400 font-normal">${currentCategory.toUpperCase()}</span>
+      const isForward = idx < 22;
+      const myWeekStr = isForward ? `NC Forward Wk ${idx + 1}` : `MY Week ${idx - 21}`;
+      const phaseBadge = isForward ? '🌱 New Crop Forward' : '🚢 Active Marketing Year';
+
+      let rows = `<div class="font-bold border-b border-slate-700 pb-1 mb-1.5 flex justify-between items-center text-xs">
+        <span>${periodLabel} &bull; ${myWeekStr}</span>
+        <span class="text-[10px] px-1.5 py-0.5 rounded ${isForward ? 'bg-amber-950/60 text-amber-300 border border-amber-800' : 'bg-blue-950/60 text-blue-300 border border-blue-800'}">${phaseBadge}</span>
       </div>`;
 
       // Target Pace benchmark row (Only when all destinations are selected)
