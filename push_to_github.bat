@@ -1,6 +1,6 @@
 @echo off
 title Push USDA Export Sales to GitHub
-cd /d "C:\Users\guang\.gemini\antigravity\scratch\usda_export_sales"
+cd /d "%~dp0"
 echo ========================================================
 echo   Pushing USDA Export Sales Tracker to GitHub...
 echo ========================================================

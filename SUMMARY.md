@@ -179,16 +179,16 @@ usda_export_sales/
 ```
 
 ### File Details:
-1. **[`fetch_and_update.py`](file:///C:/Users/guang/.gemini/antigravity/scratch/usda_export_sales/fetch_and_update.py)**:
+1. **[`fetch_and_update.py`](file:///C:/Users/guang/.gemini/antigravity/scratch/Agri%20Agent/usda_export_sales/fetch_and_update.py)**:
    * Direct integration with USDA Socrata SODA API (`agtransport.usda.gov/resource/wnn7-29tu.json`) and USDA FAS ESRQS API (`apps.fas.usda.gov/esrqs`).
    * Dynamic destination aggregation, Top 10 ranking, and remaining balance calculations.
    * USDA Pacing run-rate and requirement algorithms.
    * Robust SMTP delivery with 120s timeouts and 3 automatic connection retries.
-2. **[`dashboard_template.html`](file:///C:/Users/guang/.gemini/antigravity/scratch/usda_export_sales/dashboard_template.html)**:
+2. **[`dashboard_template.html`](file:///C:/Users/guang/.gemini/antigravity/scratch/Agri%20Agent/usda_export_sales/dashboard_template.html)**:
    * Pure HTML5 canvas vector rendering engine with crisp retina scaling.
    * `{{RELEASE_DATE}}` and `{{COMMODITIES_PAYLOAD}}` template placeholders.
    * Dynamic responsive design utilizing Tailwind CSS.
-3. **[`multi_commodity_payload.json`](file:///C:/Users/guang/.gemini/antigravity/scratch/usda_export_sales/multi_commodity_payload.json)**:
+3. **[`multi_commodity_payload.json`](file:///C:/Users/guang/.gemini/antigravity/scratch/Agri%20Agent/usda_export_sales/multi_commodity_payload.json)**:
    * Structured JSON containing 11 marketing years of aligned data points, category breakdowns, and USDA balance sheet export pacing data.
 
 ---
@@ -198,7 +198,7 @@ usda_export_sales/
 When moving this chat into a persistent project:
 1. **Active Working Directory:** Set the project workspace root to:
    ```
-   C:\Users\guang\.gemini\antigravity\scratch\usda_export_sales
+   C:\Users\guang\.gemini\antigravity\scratch\Agri Agent\usda_export_sales
    ```
 2. **GitHub Remote Connection:** The repository is already initialized, linked, and synchronized with `origin/main` at:
    ```
