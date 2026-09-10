@@ -25,7 +25,7 @@ from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
 from email.mime.base import MIMEBase
 from email import encoders
-from datetime import datetime
+from datetime import datetime, timezone
 from collections import defaultdict
 
 BASE_SOCRATA_URL = 'https://agtransport.usda.gov/resource/wnn7-29tu.json'
@@ -709,6 +709,58 @@ def dispatch_email(payload, release_date):
                 print(f"[ERROR] Failed to send email via SMTP after 3 attempts: {e}")
 
 
+def send_holiday_delay_notice(current_date):
+    """Sends an informational notice if USDA release is postponed due to a federal holiday."""
+    if not SMTP_PASSWORD:
+        return
+    now_utc = datetime.now(timezone.utc)
+    # Check if Thursday (3) or Friday (4) before release
+    subject = f"📅 [USDA Export Sales] Release Schedule Notice — Holiday Delay to Friday"
+    msg = MIMEMultipart("alternative")
+    msg["Subject"] = subject
+    msg["From"] = EMAIL_FROM
+    msg["To"] = EMAIL_RECIPIENT
+
+    body = f"""<!DOCTYPE html>
+    <html>
+    <body style="font-family: -apple-system, sans-serif; padding: 20px; background: #f8fafc; color: #0f172a;">
+        <div style="max-width: 600px; margin: 0 auto; background: #ffffff; border: 1px solid #cbd5e1; border-radius: 8px; overflow: hidden;">
+            <div style="background: #1e3a8a; color: white; padding: 18px 24px;">
+                <h2 style="margin: 0; font-size: 18px;">USDA Export Sales &bull; Release Schedule Notice</h2>
+            </div>
+            <div style="padding: 24px; font-size: 14px; line-height: 1.6;">
+                <p>Hello Cheng Guan,</p>
+                <p>The weekly pipeline checked USDA's official data servers, but <strong>no new weekly export sales report has been released yet</strong>.</p>
+                <div style="background: #eff6ff; border-left: 4px solid #2563eb; padding: 12px 16px; margin: 16px 0; border-radius: 4px;">
+                    <strong style="color: #1e3a8a;">📅 US Federal Holiday Postponement:</strong><br>
+                    Due to the <strong>Labor Day holiday</strong> on Monday, September 7, official USDA FAS policy pushes the weekly Export Sales release back by 24 hours to <strong>Friday at 8:30 AM US Eastern Time (8:30 PM SGT)</strong>.
+                </div>
+                <p>The automated pipeline is scheduled to poll USDA servers tomorrow (Friday) starting at <strong>12:30 UTC / 20:30 SGT</strong>. It will immediately ingest the new release, update the live dashboard, and dispatch your complete intelligence briefing email as soon as USDA publishes.</p>
+                <p style="margin-top: 22px;">
+                    <a href="{PAGES_URL}" style="background: #2563eb; color: white; text-decoration: none; padding: 10px 18px; border-radius: 6px; font-weight: bold; display: inline-block;">
+                        Access Current Live Dashboard ({current_date}) &rarr;
+                    </a>
+                </p>
+            </div>
+            <div style="background: #f1f5f9; padding: 12px 24px; font-size: 12px; color: #64748b; border-top: 1px solid #e2e8f0;">
+                First Resources Limited &bull; Market Analytics & Trading Intelligence
+            </div>
+        </div>
+    </body>
+    </html>"""
+    msg.attach(MIMEText(body, "html", "utf-8"))
+    try:
+        with smtplib.SMTP(SMTP_HOST, SMTP_PORT, timeout=30) as server:
+            server.ehlo()
+            server.starttls()
+            server.ehlo()
+            server.login(SMTP_USER, SMTP_PASSWORD)
+            server.sendmail(EMAIL_FROM, [EMAIL_RECIPIENT], msg.as_string())
+        print(f"[SUCCESS] Sent holiday postponement notice to {EMAIL_RECIPIENT}!")
+    except Exception as e:
+        print(f"[WARN] Could not send holiday notice: {e}")
+
+
 def main():
     parser = argparse.ArgumentParser(description="USDA Export Sales Automated Pipeline")
     parser.add_argument("--force", action="store_true", help="Force update and email dispatch even if no new date is found")
@@ -742,7 +794,11 @@ def main():
     if not should_run:
         print(f"[INFO] Current data ({current_date}) is already up-to-date with USDA.")
         print(f"Next release scheduled for Thursday at 8:30 AM US Eastern (or Friday if holiday).")
-        print(f"No update required. Exiting cleanly.")
+        now_utc = datetime.now(timezone.utc)
+        if now_utc.weekday() == 3: # Thursday
+            print(f"[NOTICE] It is Thursday and no new release is online. Sending holiday postponement notice...")
+            send_holiday_delay_notice(current_date)
+        print(f"Exiting cleanly.")
         return
 
     active_date = online_date if is_new_release else current_date
