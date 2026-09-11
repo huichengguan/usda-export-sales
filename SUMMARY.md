@@ -5,7 +5,7 @@
 **Recipient:** `chengguan.hui@first-resources.com`  
 **Live Production URL:** [https://huichengguan.github.io/usda-export-sales/](https://huichengguan.github.io/usda-export-sales/)  
 **GitHub Repository:** `https://github.com/huichengguan/usda-export-sales`  
-**Latest Release in System:** Week Ending August 27, 2026 (Week 52 Closeout)  
+**Latest Release in System:** Week Ending September 3, 2026 (2026/27 Season Kickoff)  
 
 ---
 

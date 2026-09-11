@@ -2,17 +2,21 @@ name: USDA Weekly Export Sales Intelligence
 
 on:
   schedule:
-    # Summer/Fall EDT (April - November): 8:30 AM EDT = 12:30 UTC / 20:30 SGT (plus 30m delay retry at 13:00 UTC)
+    # Summer/Fall EDT (April - November): 8:30 AM EDT = 12:30 UTC / 20:30 SGT (with retries through afternoon)
     - cron: '30 12 * * 4'
     - cron: '00 13 * * 4'
-    # Winter EST (November - March): 8:30 AM EST = 13:30 UTC / 21:30 SGT (plus 45m delay retry at 14:15 UTC)
     - cron: '30 13 * * 4'
     - cron: '15 14 * * 4'
+    - cron: '00 15 * * 4'
+    - cron: '00 16 * * 4'
+    # Winter EST (November - March): 8:30 AM EST = 13:30 UTC / 21:30 SGT
     # Friday Backup Schedule for US Federal Holiday Delays (e.g. Labor Day, Memorial Day)
     - cron: '30 12 * * 5'
     - cron: '00 13 * * 5'
     - cron: '30 13 * * 5'
     - cron: '15 14 * * 5'
+    - cron: '00 15 * * 5'
+    - cron: '00 16 * * 5'
   workflow_dispatch: # Allows manual run anytime with a single click
 
 permissions:

@@ -67,8 +67,36 @@ else:
 
 
 def get_latest_online_date():
-    """Queries USDA APIs to discover the latest week ending date available online."""
-    # 1. Socrata Soybeans check
+    """Queries USDA APIs to discover the latest week ending date available online.
+    Prioritizes official USDA FAS ESRQS publication registry as primary source of truth,
+    with fallbacks to FAS historical report data and Socrata.
+    """
+    # 1. Primary check: Official USDA FAS ESRQS publication registry
+    try:
+        url_dates = "https://apps.fas.usda.gov/esrqs/api/lookups/GetWeekEndingDates"
+        req = urllib.request.Request(url_dates, headers={'User-Agent': 'Mozilla/5.0', 'Referer': 'https://apps.fas.usda.gov/esrqs/'})
+        with urllib.request.urlopen(req, timeout=12) as resp:
+            data = json.loads(resp.read().decode('utf-8'))
+            published = [d for d in data if d.get('publishedDatetime') or (d.get('weekEndingDateStatus') or {}).get('statusName') == 'Published']
+            if published:
+                latest_published = published[-1].get('weekEndingDate', '')[:10]
+                if latest_published:
+                    return latest_published
+    except Exception as e:
+        print(f"[WARN] FAS ESRQS GetWeekEndingDates check failed: {e}")
+
+    # 2. Secondary check: FAS ESRQS WeeklyHistoricalReportData (Soybeans ID 14)
+    try:
+        url_fas = f'{BASE_FAS_URL}?WeekEndingDate=01/01/2026&CommodityId=14'
+        req_fas = urllib.request.Request(url_fas, headers={'User-Agent': 'Mozilla/5.0', 'Referer': 'https://apps.fas.usda.gov/esrqs/'})
+        with urllib.request.urlopen(req_fas, timeout=15) as resp:
+            fas_data = json.loads(resp.read().decode('utf-8'))
+            if fas_data:
+                return fas_data[-1]['weekEndingDate'][:10]
+    except Exception as e:
+        print(f"[WARN] FAS ESRQS date check failed: {e}")
+
+    # 3. Tertiary check: Socrata Soybeans
     try:
         query = "SELECT date WHERE commodity = 'Soybeans' ORDER BY date DESC LIMIT 1"
         params = {'$query': query}
@@ -80,17 +108,6 @@ def get_latest_online_date():
                 return data[0]['date'][:10]
     except Exception as e:
         print(f"[WARN] Socrata date check failed: {e}")
-
-    # 2. Fallback to FAS ESRQS API (Soybean Meal ID 15)
-    try:
-        url_fas = f'{BASE_FAS_URL}?WeekEndingDate=08/27/2026&CommodityId=15'
-        req_fas = urllib.request.Request(url_fas, headers={'User-Agent': 'Mozilla/5.0', 'Referer': 'https://apps.fas.usda.gov/esrqs/'})
-        with urllib.request.urlopen(req_fas, timeout=15) as resp:
-            fas_data = json.loads(resp.read().decode('utf-8'))
-            if fas_data:
-                return fas_data[-1]['weekEndingDate'][:10]
-    except Exception as e:
-        print(f"[WARN] FAS ESRQS date check failed: {e}")
 
     return None
 
@@ -126,11 +143,82 @@ def fetch_fas_record(commodity_id, date_str):
         return data[-1] if data else None
 
 
+GRAIN_COMMODITY_IDS = {
+    'wheat': 7,
+    'corn': 10,
+    'soybeans': 14
+}
+
+
 def update_grain_commodity(comm_key, comm_name, new_date, payload):
     """Updates Corn, Soybeans, or Wheat for the new week."""
     recs = fetch_socrata_week_records(comm_name, new_date)
     if not recs:
-        print(f"[WARN] No Socrata records found for {comm_name} on {new_date}")
+        print(f"[WARN] No Socrata records found for {comm_name} on {new_date}. Checking FAS ESRQS official data...")
+        cid = GRAIN_COMMODITY_IDS.get(comm_key)
+        rec = fetch_fas_record(cid, new_date) if cid else None
+        if not rec:
+            print(f"[ERROR] No FAS record found for {comm_name} on {new_date}")
+            return
+
+        acc_mt = float(rec.get('accumulatedExport') or 0)
+        out_mt = float(rec.get('outstandingSales') or 0)
+        tot_commit = acc_mt + out_mt
+        tot_net_cmy = float(rec.get('netSales') or 0)
+        tot_out_nmy = float(rec.get('nextYearOutstandingSales') or 0)
+        tot_net_nmy = float(rec.get('nextYearNetSales') or 0)
+
+        pkg = payload[comm_key]
+        old_rows = pkg.get('table_8rows', [])
+        
+        # Check if this release marks the start of the new marketing year (Sep 1 for Corn/Soybeans)
+        is_my_rollover = comm_key in ('corn', 'soybeans') and new_date >= '2026-09-01' and old_rows and old_rows[-1].get('acc_cmy', 0) > 30000000.0
+
+        if old_rows and old_rows[-1].get('is_total'):
+            if is_my_rollover:
+                old_out_nmy = old_rows[-1].get('out_nmy', 0)
+                for r in old_rows[:-1]:
+                    share = (r.get('out_nmy', 0) / old_out_nmy) if old_out_nmy > 0 else (1.0 / (len(old_rows) - 1))
+                    r['tot_cmy'] = round(tot_commit * share)
+                    r['acc_cmy'] = round(acc_mt * share)
+                    r['out_cmy'] = r['tot_cmy'] - r['acc_cmy']
+                    r['net_cmy'] = round(tot_net_cmy * share)
+                    r['out_nmy'] = round(tot_out_nmy * share)
+                    r['net_nmy'] = round(tot_net_nmy * share)
+            else:
+                old_tot = old_rows[-1]['tot_cmy']
+                scale_ratio = (tot_commit / old_tot) if old_tot > 0 else 1.0
+                scale_nmy = (tot_out_nmy / old_rows[-1]['out_nmy']) if old_rows[-1].get('out_nmy', 0) > 0 else 1.0
+                for r in old_rows[:-1]:
+                    r['acc_cmy'] = round(r['acc_cmy'] * scale_ratio)
+                    r['out_cmy'] = round(r['out_cmy'] * scale_ratio)
+                    r['tot_cmy'] = round(r['tot_cmy'] * scale_ratio)
+                    r['out_nmy'] = round(r.get('out_nmy', 0) * scale_nmy)
+
+            old_rows[-1]['acc_cmy'] = acc_mt
+            old_rows[-1]['out_cmy'] = out_mt
+            old_rows[-1]['tot_cmy'] = tot_commit
+            old_rows[-1]['net_cmy'] = tot_net_cmy
+            old_rows[-1]['out_nmy'] = tot_out_nmy
+            old_rows[-1]['net_nmy'] = tot_net_nmy
+
+        pkg['latest_date'] = new_date
+
+        active_year = '2026-27' if comm_key == 'wheat' or new_date >= '2026-09-01' else '2025-26'
+        total_curves = pkg['data']['total']['curves']
+        if active_year in total_curves:
+            pts = total_curves[active_year]
+            if not any(p.get('date') == new_date for p in pts):
+                pts.append({
+                    'date': new_date,
+                    'mnt': round(tot_commit / 1e6, 4),
+                    'kmt': round(tot_commit / 1e3, 1),
+                    'tot_kmt': round(tot_commit / 1e3, 1),
+                    'acc_kmt': round(acc_mt / 1e3, 1),
+                    'out_kmt': round(out_mt / 1e3, 1),
+                    'net_kmt': round(tot_net_cmy / 1e3, 1)
+                })
+        print(f"[SUCCESS] Updated {comm_name} (FAS ESRQS) with release {new_date}: Total Commit = {tot_commit/1e3:,.1f} k MT")
         return
 
     # Aggregate by country
@@ -332,25 +420,40 @@ def recalculate_pacing_tracker(payload):
         if 'usda_pacing' not in item or 'table_8rows' not in item:
             continue
         total_row = item['table_8rows'][-1]
+        latest_date = item.get('latest_date', '')
         
         # 1. 2026/27 New Crop Pace
         nmy = item['usda_pacing'].get('nmy_2026_27')
         if nmy:
-            # Commitments = new crop outstanding
-            commit_kmt = round(total_row['out_nmy'] / 1e3, 1)
+            # If 2026/27 season has officially started (Wheat: June 1, Corn/Soybeans: Sept 1):
+            # Commitments are in tot_cmy. Otherwise (Meal & Oil until Oct 1), in out_nmy.
+            if cKey == 'wheat' or (cKey in ('corn', 'soybeans') and latest_date >= '2026-09-01'):
+                commit_kmt = round(total_row['tot_cmy'] / 1e3, 1)
+                if cKey in ('corn', 'soybeans'):
+                    nmy['remaining_weeks'] = 51
+                    nmy['status_desc'] = "Week 1 of 2026/27 (Started Sept 1)"
+                elif cKey == 'wheat':
+                    nmy['remaining_weeks'] = 38
+                    nmy['status_desc'] = "Week 14 of 2026/27 (Started June 1)"
+            else:
+                commit_kmt = round(total_row['out_nmy'] / 1e3, 1)
+
             tgt_kmt = nmy['target_kmt']
             pct = round((commit_kmt / tgt_kmt * 100), 1) if tgt_kmt > 0 else 0.0
             nmy['commitments_kmt'] = commit_kmt
             nmy['commitments_mnt'] = round(commit_kmt / 1e3, 3)
             nmy['commitments_pct'] = pct
             
-            rem_weeks = nmy.get('remaining_weeks', 52)
+            rem_weeks = nmy.get('remaining_weeks', 51)
             rem_sales_kmt = max(0.0, tgt_kmt - commit_kmt)
+            nmy['remaining_to_sell_kmt'] = round(rem_sales_kmt, 1)
+            nmy['remaining_to_sell_mnt'] = round(rem_sales_kmt / 1e3, 3)
             req_sales = round(rem_sales_kmt / rem_weeks, 1) if rem_weeks > 0 else 0.0
             req_ship = round(tgt_kmt / 52.0, 1)
             
             nmy['req_weekly_sales_pace_kmt'] = req_sales
             nmy['req_weekly_sales_pace_mnt'] = round(req_sales / 1e3, 3)
+            nmy['req_weekly_sales_pace_label'] = f"{req_sales:,.1f} k MT/wk" if rem_sales_kmt > 0 else "Target Met"
             nmy['req_weekly_shipment_pace_kmt'] = req_ship
             nmy['req_weekly_shipment_pace_mnt'] = round(req_ship / 1e3, 3)
             
@@ -365,25 +468,36 @@ def recalculate_pacing_tracker(payload):
         # 2. 2025/26 Close-out Audit
         cmy = item['usda_pacing'].get('cmy_2025_26')
         if cmy:
-            commit_kmt = round(total_row['tot_cmy'] / 1e3, 1)
-            tgt_kmt = cmy['target_kmt']
-            pct = round((commit_kmt / tgt_kmt * 100), 1) if tgt_kmt > 0 else 0.0
-            cmy['commitments_kmt'] = commit_kmt
-            cmy['commitments_mnt'] = round(commit_kmt / 1e3, 3)
-            cmy['commitments_pct'] = pct
-
-            rem_sales = max(0.0, tgt_kmt - commit_kmt)
-            cmy['req_weekly_sales_pace_kmt'] = round(rem_sales, 1)
-            cmy['req_weekly_sales_pace_mnt'] = round(rem_sales / 1e3, 3)
-            if commit_kmt >= tgt_kmt:
+            # If 2025/26 season is completed (Wheat on May 31, Corn/Soybeans on Aug 31)
+            if cKey == 'wheat' or (cKey in ('corn', 'soybeans') and latest_date >= '2026-09-01'):
+                cmy['status_desc'] = "Completed (Ended Aug 31, 2026)" if cKey != 'wheat' else "Completed (Ended May 31, 2026)"
+                cmy['remaining_weeks'] = 0
+                cmy['req_weekly_sales_pace_kmt'] = 0.0
+                cmy['req_weekly_sales_pace_mnt'] = 0.0
+                cmy['req_weekly_sales_pace_label'] = "Season Completed"
+                cmy['req_weekly_shipment_pace_kmt'] = 0.0
+                cmy['req_weekly_shipment_pace_mnt'] = 0.0
                 cmy['pace_status'] = 'ahead'
-                cmy['req_weekly_sales_pace_label'] = f"Met (+{round(commit_kmt - tgt_kmt):,}k)"
-            elif pct >= 95.0:
-                cmy['pace_status'] = 'on_track'
-                cmy['req_weekly_sales_pace_label'] = f"{round(rem_sales):,} k MT req."
             else:
-                cmy['pace_status'] = 'lagging'
-                cmy['req_weekly_sales_pace_label'] = f"{round(rem_sales):,} k MT req."
+                commit_kmt = round(total_row['tot_cmy'] / 1e3, 1)
+                tgt_kmt = cmy['target_kmt']
+                pct = round((commit_kmt / tgt_kmt * 100), 1) if tgt_kmt > 0 else 0.0
+                cmy['commitments_kmt'] = commit_kmt
+                cmy['commitments_mnt'] = round(commit_kmt / 1e3, 3)
+                cmy['commitments_pct'] = pct
+
+                rem_sales = max(0.0, tgt_kmt - commit_kmt)
+                cmy['req_weekly_sales_pace_kmt'] = round(rem_sales, 1)
+                cmy['req_weekly_sales_pace_mnt'] = round(rem_sales / 1e3, 3)
+                if commit_kmt >= tgt_kmt:
+                    cmy['pace_status'] = 'ahead'
+                    cmy['req_weekly_sales_pace_label'] = f"Met (+{round(commit_kmt - tgt_kmt):,}k)"
+                elif pct >= 95.0:
+                    cmy['pace_status'] = 'on_track'
+                    cmy['req_weekly_sales_pace_label'] = f"{round(rem_sales):,} k MT req."
+                else:
+                    cmy['pace_status'] = 'lagging'
+                    cmy['req_weekly_sales_pace_label'] = f"{round(rem_sales):,} k MT req."
 
 
 def rebuild_index_html(payload, release_date):
@@ -596,12 +710,13 @@ def build_email_body_html(payload, release_date):
     dt = datetime.strptime(release_date, "%Y-%m-%d")
     date_display = dt.strftime("%B %d, %Y")
 
+    is_new_crop = release_date >= '2026-09-01'
     comm_configs = [
-        ('soybeans', 'Soybeans', '🌿', 'MY 2025/2026 Closeout & 2026/27 Forward Sales'),
-        ('corn', 'Corn', '🌽', 'MY 2025/2026 Closeout & 2026/27 Forward Sales'),
-        ('wheat', 'Wheat', '🌾', 'MY 2026/2027 Active Season (Week 13)'),
-        ('meal', 'Soybean Meal', '📦', 'MY 2025/2026 Closeout & 2026/27 Forward Sales'),
-        ('oil', 'Soybean Oil', '🫗', 'MY 2025/2026 Closeout & 2026/27 Forward Sales'),
+        ('soybeans', 'Soybeans', '🌿', 'MY 2026/2027 Active Season (Week 1 Kickoff)' if is_new_crop else 'MY 2025/2026 Closeout & 2026/27 Forward Sales'),
+        ('corn', 'Corn', '🌽', 'MY 2026/2027 Active Season (Week 1 Kickoff)' if is_new_crop else 'MY 2025/2026 Closeout & 2026/27 Forward Sales'),
+        ('wheat', 'Wheat', '🌾', 'MY 2026/2027 Active Season (Week 14)' if release_date >= '2026-09-01' else 'MY 2026/2027 Active Season (Week 13)'),
+        ('meal', 'Soybean Meal', '📦', 'MY 2025/2026 Closeout (Week 49) & 2026/27 Forward Sales'),
+        ('oil', 'Soybean Oil', '🫗', 'MY 2025/2026 Closeout (Week 49) & 2026/27 Forward Sales'),
     ]
 
     pacing_scorecards = build_pacing_scorecards_html(payload)
