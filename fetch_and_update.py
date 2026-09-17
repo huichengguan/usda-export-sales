@@ -38,18 +38,26 @@ TEMPLATE_FILE = REPO_DIR / "dashboard_template.html"
 INDEX_FILE = REPO_DIR / "index.html"
 
 # SMTP & Notification Config
-ENV_FILE = Path(r"C:\Users\guang\.gemini\antigravity\scratch\farmdoc_agent\.env")
+ENV_PATHS = [
+    REPO_DIR / ".env",
+    REPO_DIR.parent / "farmdoc_agent" / ".env",
+    Path(r"C:\Users\guang\.gemini\antigravity\scratch\Agri Agent\farmdoc_agent\.env"),
+    Path(r"C:\Users\guang\.gemini\antigravity\scratch\farmdoc_agent\.env"),
+    REPO_DIR.parent / "CFTC_drypowder" / ".env"
+]
 local_config = {}
-if ENV_FILE.exists():
-    try:
-        with open(ENV_FILE, 'r', encoding='utf-8') as f:
-            for line in f:
-                line = line.strip()
-                if line and not line.startswith('#') and '=' in line:
-                    k, v = line.split('=', 1)
-                    local_config[k.strip()] = v.strip()
-    except Exception:
-        pass
+for env_p in ENV_PATHS:
+    if env_p.exists():
+        try:
+            with open(env_p, 'r', encoding='utf-8') as f:
+                for line in f:
+                    line = line.strip()
+                    if line and not line.startswith('#') and '=' in line:
+                        k, v = line.split('=', 1)
+                        if k.strip() not in local_config:
+                            local_config[k.strip()] = v.strip()
+        except Exception:
+            pass
 
 SMTP_HOST = os.getenv("SMTP_HOST", local_config.get("SMTP_HOST", "smtp.gmail.com"))
 SMTP_PORT = int(os.getenv("SMTP_PORT", local_config.get("SMTP_PORT", "587")))
