@@ -119,22 +119,42 @@ def get_latest_online_date():
 
     return None
 
+def get_active_myear(comm_key, date_str):
+    """Returns the marketing year string (e.g. '2026/2027') for a given commodity and release date."""
+    if comm_key == 'wheat':
+        return '2026/2027' if date_str >= '2026-06-01' else '2025/2026'
+    elif comm_key in ('corn', 'soybeans'):
+        return '2026/2027' if date_str >= '2026-09-01' else '2025/2026'
+    elif comm_key in ('meal', 'oil'):
+        return '2026/2027' if date_str >= '2026-10-01' else '2025/2026'
+    return '2026/2027'
 
-def fetch_socrata_week_records(commodity_name, date_str):
-    """Fetches all country records for a specific commodity and date from Socrata."""
+
+def fetch_socrata_week_records(commodity_name, date_str, myear=None):
+    """Fetches all country records for a specific commodity and date from Socrata, optionally filtered by myear."""
     full_date = f"{date_str}T00:00:00.000" if len(date_str) == 10 else date_str
+    where_clause = f"commodity = '{commodity_name}' AND date = '{full_date}'"
+    if myear:
+        where_clause += f" AND myear = '{myear}'"
     query = f"""
     SELECT date, myear, my, country,
            totcommcmy, outsalescmy, accexportscmy, netsalescmy,
            outsalesnmy, netsalesnmy
-    WHERE commodity = '{commodity_name}' AND date = '{full_date}'
+    WHERE {where_clause}
     LIMIT 5000
     """
     params = {'$query': query}
     url = BASE_SOCRATA_URL + '?' + urllib.parse.urlencode(params)
     req = urllib.request.Request(url, headers={'User-Agent': 'Mozilla/5.0'})
-    with urllib.request.urlopen(req, timeout=20) as resp:
-        return json.loads(resp.read().decode('utf-8'))
+    try:
+        with urllib.request.urlopen(req, timeout=20) as resp:
+            data = json.loads(resp.read().decode('utf-8'))
+            if myear:
+                return [r for r in data if r.get('myear') == myear]
+            return data
+    except Exception as e:
+        print(f"[WARN] Failed fetching Socrata records for {commodity_name} on {date_str}: {e}")
+        return []
 
 
 def fetch_fas_record(commodity_id, date_str):
@@ -158,9 +178,110 @@ GRAIN_COMMODITY_IDS = {
 }
 
 
+def scale_table_rows_proportionally(old_rows, tot_commit, acc_mt, out_mt, tot_net_cmy, tot_out_nmy, tot_net_nmy, is_my_rollover=False):
+    """
+    Scales table rows proportionally while guaranteeing that the sum of individual
+    destination rows (Top 10 + Unknown + Remaining) EXACTLY matches TOTAL ALL DESTINATIONS
+    across all columns (tot_cmy, acc_cmy, out_cmy, net_cmy, out_nmy, net_nmy),
+    and that tot_cmy == acc_cmy + out_cmy for every row.
+    """
+    if not old_rows:
+        return []
+
+    # Separate top/country rows from Remaining Destinations and Total
+    country_rows = [r for r in old_rows if not r.get('is_total') and r.get('name') != 'Remaining Destinations']
+    if not country_rows:
+        return old_rows
+
+    old_total_row = old_rows[-1] if old_rows[-1].get('is_total') else None
+
+    # Determine base shares for each country
+    if is_my_rollover and old_total_row and old_total_row.get('out_nmy', 0) > 0:
+        base_denom = old_total_row['out_nmy']
+        shares = [(r.get('out_nmy', 0) / base_denom) for r in country_rows]
+    else:
+        old_tot_sum = old_total_row['tot_cmy'] if old_total_row else sum(r.get('tot_cmy', 0) for r in country_rows)
+        if old_tot_sum > 0:
+            shares = [(r.get('tot_cmy', 0) / old_tot_sum) for r in country_rows]
+        else:
+            shares = [1.0 / len(country_rows) for _ in country_rows]
+
+    # NMY shares
+    old_out_nmy_total = old_total_row.get('out_nmy', 0) if old_total_row else 0
+    if old_out_nmy_total > 0:
+        nmy_shares = [(r.get('out_nmy', 0) / old_out_nmy_total) for r in country_rows]
+    else:
+        nmy_shares = shares
+
+    new_rows = []
+    sum_tot = 0.0
+    sum_acc = 0.0
+    sum_net = 0.0
+    sum_out_nmy = 0.0
+    sum_net_nmy = 0.0
+
+    for r, share, nmy_share in zip(country_rows, shares, nmy_shares):
+        c_tot = round(tot_commit * share)
+        c_acc = round(acc_mt * share)
+        c_out = c_tot - c_acc
+        c_net = round(tot_net_cmy * share)
+        c_out_nmy = round(tot_out_nmy * nmy_share)
+        c_net_nmy = round(tot_net_nmy * share)
+
+        new_rows.append({
+            'name': r['name'],
+            'acc_cmy': c_acc,
+            'out_cmy': c_out,
+            'tot_cmy': c_tot,
+            'net_cmy': c_net,
+            'net_nmy': c_net_nmy,
+            'out_nmy': c_out_nmy,
+            'is_total': False
+        })
+        sum_tot += c_tot
+        sum_acc += c_acc
+        sum_net += c_net
+        sum_out_nmy += c_out_nmy
+        sum_net_nmy += c_net_nmy
+
+    # Remaining Destinations absorbs the residual so the sum matches TOTAL exactly down to 0.1 MT
+    rem_tot = tot_commit - sum_tot
+    rem_acc = acc_mt - sum_acc
+    rem_out = rem_tot - rem_acc
+    rem_net = tot_net_cmy - sum_net
+    rem_out_nmy = tot_out_nmy - sum_out_nmy
+    rem_net_nmy = tot_net_nmy - sum_net_nmy
+
+    new_rows.append({
+        'name': 'Remaining Destinations',
+        'acc_cmy': rem_acc,
+        'out_cmy': rem_out,
+        'tot_cmy': rem_tot,
+        'net_cmy': rem_net,
+        'net_nmy': rem_net_nmy,
+        'out_nmy': rem_out_nmy,
+        'is_total': False
+    })
+
+    # Total row
+    new_rows.append({
+        'name': 'TOTAL ALL DESTINATIONS',
+        'acc_cmy': acc_mt,
+        'out_cmy': out_mt,
+        'tot_cmy': tot_commit,
+        'net_cmy': tot_net_cmy,
+        'net_nmy': tot_net_nmy,
+        'out_nmy': tot_out_nmy,
+        'is_total': True
+    })
+
+    return new_rows
+
+
 def update_grain_commodity(comm_key, comm_name, new_date, payload):
     """Updates Corn, Soybeans, or Wheat for the new week."""
-    recs = fetch_socrata_week_records(comm_name, new_date)
+    target_myear = get_active_myear(comm_key, new_date)
+    recs = fetch_socrata_week_records(comm_name, new_date, myear=target_myear)
     if not recs:
         print(f"[WARN] No Socrata records found for {comm_name} on {new_date}. Checking FAS ESRQS official data...")
         cid = GRAIN_COMMODITY_IDS.get(comm_key)
@@ -183,32 +304,9 @@ def update_grain_commodity(comm_key, comm_name, new_date, payload):
         is_my_rollover = comm_key in ('corn', 'soybeans') and new_date >= '2026-09-01' and old_rows and old_rows[-1].get('acc_cmy', 0) > 30000000.0
 
         if old_rows and old_rows[-1].get('is_total'):
-            if is_my_rollover:
-                old_out_nmy = old_rows[-1].get('out_nmy', 0)
-                for r in old_rows[:-1]:
-                    share = (r.get('out_nmy', 0) / old_out_nmy) if old_out_nmy > 0 else (1.0 / (len(old_rows) - 1))
-                    r['tot_cmy'] = round(tot_commit * share)
-                    r['acc_cmy'] = round(acc_mt * share)
-                    r['out_cmy'] = r['tot_cmy'] - r['acc_cmy']
-                    r['net_cmy'] = round(tot_net_cmy * share)
-                    r['out_nmy'] = round(tot_out_nmy * share)
-                    r['net_nmy'] = round(tot_net_nmy * share)
-            else:
-                old_tot = old_rows[-1]['tot_cmy']
-                scale_ratio = (tot_commit / old_tot) if old_tot > 0 else 1.0
-                scale_nmy = (tot_out_nmy / old_rows[-1]['out_nmy']) if old_rows[-1].get('out_nmy', 0) > 0 else 1.0
-                for r in old_rows[:-1]:
-                    r['acc_cmy'] = round(r['acc_cmy'] * scale_ratio)
-                    r['out_cmy'] = round(r['out_cmy'] * scale_ratio)
-                    r['tot_cmy'] = round(r['tot_cmy'] * scale_ratio)
-                    r['out_nmy'] = round(r.get('out_nmy', 0) * scale_nmy)
-
-            old_rows[-1]['acc_cmy'] = acc_mt
-            old_rows[-1]['out_cmy'] = out_mt
-            old_rows[-1]['tot_cmy'] = tot_commit
-            old_rows[-1]['net_cmy'] = tot_net_cmy
-            old_rows[-1]['out_nmy'] = tot_out_nmy
-            old_rows[-1]['net_nmy'] = tot_net_nmy
+            pkg['table_8rows'] = scale_table_rows_proportionally(
+                old_rows, tot_commit, acc_mt, out_mt, tot_net_cmy, tot_out_nmy, tot_net_nmy, is_my_rollover=is_my_rollover
+            )
 
         pkg['latest_date'] = new_date
 
@@ -216,16 +314,20 @@ def update_grain_commodity(comm_key, comm_name, new_date, payload):
         total_curves = pkg['data']['total']['curves']
         if active_year in total_curves:
             pts = total_curves[active_year]
-            if not any(p.get('date') == new_date for p in pts):
-                pts.append({
-                    'date': new_date,
-                    'mnt': round(tot_commit / 1e6, 4),
-                    'kmt': round(tot_commit / 1e3, 1),
-                    'tot_kmt': round(tot_commit / 1e3, 1),
-                    'acc_kmt': round(acc_mt / 1e3, 1),
-                    'out_kmt': round(out_mt / 1e3, 1),
-                    'net_kmt': round(tot_net_cmy / 1e3, 1)
-                })
+            existing = next((p for p in pts if p.get('date') == new_date), None)
+            new_pt = {
+                'date': new_date,
+                'mnt': round(tot_commit / 1e6, 4),
+                'kmt': round(tot_commit / 1e3, 1),
+                'tot_kmt': round(tot_commit / 1e3, 1),
+                'acc_kmt': round(acc_mt / 1e3, 1),
+                'out_kmt': round(out_mt / 1e3, 1),
+                'net_kmt': round(tot_net_cmy / 1e3, 1)
+            }
+            if existing:
+                existing.update(new_pt)
+            else:
+                pts.append(new_pt)
         print(f"[SUCCESS] Updated {comm_name} (FAS ESRQS) with release {new_date}: Total Commit = {tot_commit/1e3:,.1f} k MT")
         return
 
@@ -314,12 +416,12 @@ def update_grain_commodity(comm_key, comm_name, new_date, payload):
     })
 
     # Remaining
-    rem_tot = max(0.0, tot_commit - top10_tot - unknown_data['tot_cmy'])
-    rem_acc = max(0.0, tot_acc - top10_acc - unknown_data['acc_cmy'])
-    rem_out = max(0.0, tot_out - top10_out - unknown_data['out_cmy'])
+    rem_tot = tot_commit - top10_tot - unknown_data['tot_cmy']
+    rem_acc = tot_acc - top10_acc - unknown_data['acc_cmy']
+    rem_out = rem_tot - rem_acc
     rem_net_cmy = tot_net_cmy - top10_net_cmy - unknown_data['net_cmy']
     rem_net_nmy = tot_net_nmy - top10_net_nmy - unknown_data['net_nmy']
-    rem_out_nmy = max(0.0, tot_out_nmy - top10_out_nmy - unknown_data['out_nmy'])
+    rem_out_nmy = tot_out_nmy - top10_out_nmy - unknown_data['out_nmy']
 
     new_rows.append({
         'name': 'Remaining Destinations',
@@ -353,16 +455,20 @@ def update_grain_commodity(comm_key, comm_name, new_date, payload):
     total_curves = pkg['data']['total']['curves']
     if active_year in total_curves:
         pts = total_curves[active_year]
-        if not any(p.get('date') == new_date for p in pts):
-            pts.append({
-                'date': new_date,
-                'mnt': round(tot_commit / 1e6, 4),
-                'kmt': round(tot_commit / 1e3, 1),
-                'tot_kmt': round(tot_commit / 1e3, 1),
-                'acc_kmt': round(tot_acc / 1e3, 1),
-                'out_kmt': round(tot_out / 1e3, 1),
-                'net_kmt': round(tot_net_cmy / 1e3, 1)
-            })
+        existing = next((p for p in pts if p.get('date') == new_date), None)
+        new_pt = {
+            'date': new_date,
+            'mnt': round(tot_commit / 1e6, 4),
+            'kmt': round(tot_commit / 1e3, 1),
+            'tot_kmt': round(tot_commit / 1e3, 1),
+            'acc_kmt': round(tot_acc / 1e3, 1),
+            'out_kmt': round(tot_out / 1e3, 1),
+            'net_kmt': round(tot_net_cmy / 1e3, 1)
+        }
+        if existing:
+            existing.update(new_pt)
+        else:
+            pts.append(new_pt)
 
     print(f"[SUCCESS] Updated {comm_name} with release {new_date}: Total Commit = {tot_commit/1e3:,.1f} k MT")
 
@@ -384,22 +490,9 @@ def update_processed_commodity(comm_key, cid, comm_name, new_date, payload):
     pkg = payload[comm_key]
     old_rows = pkg.get('table_8rows', [])
     if old_rows and old_rows[-1].get('is_total'):
-        old_tot_mt = old_rows[-1]['tot_cmy']
-        scale_ratio = (tot_mt / old_tot_mt) if old_tot_mt > 0 else 1.0
-        scale_nmy = (out_nmy_mt / old_rows[-1]['out_nmy']) if old_rows[-1].get('out_nmy', 0) > 0 else 1.0
-
-        for r in old_rows[:-1]:
-            r['acc_cmy'] = round(r['acc_cmy'] * scale_ratio)
-            r['out_cmy'] = round(r['out_cmy'] * scale_ratio)
-            r['tot_cmy'] = round(r['tot_cmy'] * scale_ratio)
-            r['out_nmy'] = round(r.get('out_nmy', 0) * scale_nmy)
-
-        old_rows[-1]['acc_cmy'] = acc_mt
-        old_rows[-1]['out_cmy'] = out_mt
-        old_rows[-1]['tot_cmy'] = tot_mt
-        old_rows[-1]['net_cmy'] = net_mt
-        old_rows[-1]['out_nmy'] = out_nmy_mt
-        old_rows[-1]['net_nmy'] = net_nmy_mt
+        pkg['table_8rows'] = scale_table_rows_proportionally(
+            old_rows, tot_mt, acc_mt, out_mt, net_mt, out_nmy_mt, net_nmy_mt, is_my_rollover=False
+        )
 
     pkg['latest_date'] = new_date
 
@@ -408,16 +501,20 @@ def update_processed_commodity(comm_key, cid, comm_name, new_date, payload):
     total_curves = pkg['data']['total']['curves']
     if active_year in total_curves:
         pts = total_curves[active_year]
-        if not any(p.get('date') == new_date for p in pts):
-            pts.append({
-                'date': new_date,
-                'mnt': round(tot_mt / 1e6, 4),
-                'kmt': round(tot_mt / 1e3, 1),
-                'tot_kmt': round(tot_mt / 1e3, 1),
-                'acc_kmt': round(acc_mt / 1e3, 1),
-                'out_kmt': round(out_mt / 1e3, 1),
-                'net_kmt': round(net_mt / 1e3, 1)
-            })
+        existing = next((p for p in pts if p.get('date') == new_date), None)
+        new_pt = {
+            'date': new_date,
+            'mnt': round(tot_mt / 1e6, 4),
+            'kmt': round(tot_mt / 1e3, 1),
+            'tot_kmt': round(tot_mt / 1e3, 1),
+            'acc_kmt': round(acc_mt / 1e3, 1),
+            'out_kmt': round(out_mt / 1e3, 1),
+            'net_kmt': round(net_mt / 1e3, 1)
+        }
+        if existing:
+            existing.update(new_pt)
+        else:
+            pts.append(new_pt)
 
     print(f"[SUCCESS] Updated {comm_name} with release {new_date}: Total Commit = {tot_mt/1e3:,.1f} k MT")
 
@@ -720,11 +817,11 @@ def build_email_body_html(payload, release_date):
 
     is_new_crop = release_date >= '2026-09-01'
     comm_configs = [
-        ('soybeans', 'Soybeans', '🌿', 'MY 2026/2027 Active Season (Week 1 Kickoff)' if is_new_crop else 'MY 2025/2026 Closeout & 2026/27 Forward Sales'),
-        ('corn', 'Corn', '🌽', 'MY 2026/2027 Active Season (Week 1 Kickoff)' if is_new_crop else 'MY 2025/2026 Closeout & 2026/27 Forward Sales'),
-        ('wheat', 'Wheat', '🌾', 'MY 2026/2027 Active Season (Week 14)' if release_date >= '2026-09-01' else 'MY 2026/2027 Active Season (Week 13)'),
-        ('meal', 'Soybean Meal', '📦', 'MY 2025/2026 Closeout (Week 49) & 2026/27 Forward Sales'),
-        ('oil', 'Soybean Oil', '🫗', 'MY 2025/2026 Closeout (Week 49) & 2026/27 Forward Sales'),
+        ('soybeans', 'Soybeans', '🌿', "MY 2026/2027 Active Season (Week 3)" if release_date == '2026-09-17' else ("MY 2026/2027 Active Season" if is_new_crop else "MY 2025/2026 Closeout & 2026/27 Forward Sales")),
+        ('corn', 'Corn', '🌽', "MY 2026/2027 Active Season (Week 3)" if release_date == '2026-09-17' else ("MY 2026/2027 Active Season" if is_new_crop else "MY 2025/2026 Closeout & 2026/27 Forward Sales")),
+        ('wheat', 'Wheat', '🌾', "MY 2026/2027 Active Season (Week 16)" if release_date == '2026-09-17' else "MY 2026/2027 Active Season"),
+        ('meal', 'Soybean Meal', '📦', "MY 2025/2026 Closeout (Week 51) & 2026/27 Forward Sales" if release_date == '2026-09-17' else "MY 2025/2026 Closeout & 2026/27 Forward Sales"),
+        ('oil', 'Soybean Oil', '🫗', "MY 2025/2026 Closeout (Week 51) & 2026/27 Forward Sales" if release_date == '2026-09-17' else "MY 2025/2026 Closeout & 2026/27 Forward Sales"),
     ]
 
     pacing_scorecards = build_pacing_scorecards_html(payload)
@@ -925,8 +1022,8 @@ def main():
         return
 
     active_date = online_date if is_new_release else current_date
-    if is_new_release:
-        print(f"[UPDATE] New USDA release detected: {active_date}! Pulling new data...")
+    if is_new_release or args.force or os.getenv("FORCE_UPDATE", "").lower() in ("true", "1"):
+        print(f"[UPDATE] Running update pipeline for release {active_date} (is_new={is_new_release}, force={args.force})...")
         update_grain_commodity('soybeans', 'Soybeans', active_date, payload)
         update_grain_commodity('corn', 'Corn', active_date, payload)
         update_grain_commodity('wheat', 'Wheat', active_date, payload)
@@ -940,7 +1037,7 @@ def main():
             json.dump(payload, f)
         print(f"[SUCCESS] Saved updated payload to {PAYLOAD_FILE}")
     else:
-        print(f"[INFO] Force update requested for date {active_date}.")
+        print(f"[INFO] Skipping re-fetch for date {active_date}.")
         recalculate_pacing_tracker(payload)
 
     # 3. Rebuild index.html
