@@ -5,7 +5,7 @@
 **Recipient:** `chengguan.hui@first-resources.com`  
 **Live Production URL:** [https://huichengguan.github.io/usda-export-sales/](https://huichengguan.github.io/usda-export-sales/)  
 **GitHub Repository:** `https://github.com/huichengguan/usda-export-sales`  
-**Latest Release in System:** Week Ending September 10, 2026 (Week 2 Release)  
+**Latest Release in System:** Week Ending September 17, 2026 (Week 3 Release)  
 
 ---
 
