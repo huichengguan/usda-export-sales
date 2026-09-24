@@ -138,8 +138,123 @@
       </div>
     </header>
 
-    <!-- Executive KPI Cards -->
-    <div class="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4">
+    <!-- ===================================================================== -->
+    <!-- 0. EXECUTIVE MULTI-COMMODITY SUMMARY TAB VIEW CONTAINER               -->
+    <!-- ===================================================================== -->
+    <div id="summary-view-container" class="space-y-5">
+      <!-- Executive KPI Cards for All Commodities Combined -->
+      <div class="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4">
+        <div class="stat-card rounded-xl p-4 shadow-xs">
+          <div class="text-xs font-medium text-[var(--muted-foreground,#64748b)] uppercase tracking-wider">Weekly Net Sales (Total)</div>
+          <div class="text-2xl font-extrabold text-emerald-600 dark:text-emerald-400 mt-1" id="sum-kpi-net">--</div>
+          <div class="text-[11px] text-[var(--muted-foreground,#64748b)] mt-1 truncate">All 5 Commodities Combined</div>
+        </div>
+
+        <div class="stat-card rounded-xl p-4 shadow-xs">
+          <div class="text-xs font-medium text-[var(--muted-foreground,#64748b)] uppercase tracking-wider">Weekly Exports Shipped</div>
+          <div class="text-2xl font-extrabold text-blue-600 dark:text-blue-400 mt-1" id="sum-kpi-export">--</div>
+          <div class="text-[11px] text-[var(--muted-foreground,#64748b)] mt-1 truncate">Physical Vessel Departures</div>
+        </div>
+
+        <div class="stat-card rounded-xl p-4 shadow-xs">
+          <div class="text-xs font-medium text-[var(--muted-foreground,#64748b)] uppercase tracking-wider">Total Outstanding (Unshipped)</div>
+          <div class="text-2xl font-extrabold text-amber-600 dark:text-amber-400 mt-1" id="sum-kpi-out">--</div>
+          <div class="text-[11px] text-[var(--muted-foreground,#64748b)] mt-1 truncate">Booked Contracts Awaiting Export</div>
+        </div>
+
+        <div class="stat-card rounded-xl p-4 shadow-xs">
+          <div class="text-xs font-medium text-[var(--muted-foreground,#64748b)] uppercase tracking-wider">Total Commitments & Pacing</div>
+          <div class="text-2xl font-extrabold text-indigo-600 dark:text-indigo-400 mt-1" id="sum-kpi-tot">--</div>
+          <div class="text-[11px] text-[var(--muted-foreground,#64748b)] mt-1 truncate" id="sum-kpi-pacing-desc">38.4% of USDA Target Booked</div>
+        </div>
+      </div>
+
+      <!-- Multi-Commodity Summary Intelligence Table -->
+      <div class="stat-card rounded-xl p-5 shadow-xs space-y-4">
+        <div class="flex flex-col md:flex-row md:items-center justify-between gap-3 pb-3 border-b border-[var(--border,#e2e8f0)]">
+          <div>
+            <div class="flex items-center gap-2">
+              <h2 class="text-base md:text-lg font-bold text-[var(--foreground,#0f172a)]">
+                📊 Consolidated US Agricultural Export Sales Intelligence
+              </h2>
+              <span class="px-2 py-0.5 rounded text-[11px] font-bold bg-blue-100 text-blue-800 dark:bg-blue-900/50 dark:text-blue-300">
+                All Commodities
+              </span>
+            </div>
+            <p class="text-xs text-[var(--muted-foreground,#64748b)] mt-0.5">
+              National totals across all 5 major agricultural export complexes: Official USDA FAS ESRQS Release vs Pre-Report Trade Expectations
+            </p>
+          </div>
+
+          <div class="flex items-center gap-2">
+            <span class="text-xs font-semibold px-2.5 py-1 rounded bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300" id="sum-table-unit-badge">
+              Unit: 1,000 MT
+            </span>
+          </div>
+        </div>
+
+        <!-- The Consolidated Summary Table -->
+        <div class="overflow-x-auto border border-[var(--border,#e2e8f0)] rounded-lg">
+          <table class="w-full text-left text-xs whitespace-nowrap">
+            <thead class="bg-slate-50 dark:bg-slate-900 border-b border-[var(--border,#cbd5e1)] text-[11px] font-bold text-slate-700 dark:text-slate-300">
+              <tr>
+                <th class="py-3 px-3.5">Commodity & Marketing Year</th>
+                <th class="py-3 px-3 text-right">Trade Survey Expected Range</th>
+                <th class="py-3 px-3 text-right">Weekly Net Sales</th>
+                <th class="py-3 px-3 text-center">Market Signal</th>
+                <th class="py-3 px-3 text-right">Weekly Exports</th>
+                <th class="py-3 px-3 text-right">Accumulated Exports</th>
+                <th class="py-3 px-3 text-right">Outstanding (Unshipped)</th>
+                <th class="py-3 px-3 text-right">Total Commitments</th>
+                <th class="py-3 px-3 text-right">Next MY Net</th>
+                <th class="py-3 px-3 text-right">USDA Full-Year Target</th>
+                <th class="py-3 px-3 text-center">% Target Booked</th>
+                <th class="py-3 px-3 text-center">Drilldown</th>
+              </tr>
+            </thead>
+            <tbody class="divide-y divide-[var(--border,#e2e8f0)]" id="summary-table-tbody">
+              <!-- Populated dynamically via renderSummaryView() -->
+            </tbody>
+            <tfoot class="bg-slate-50 dark:bg-slate-900 border-t-2 border-slate-300 dark:border-slate-700 font-bold" id="summary-table-tfoot">
+              <!-- Populated dynamically with grand totals -->
+            </tfoot>
+          </table>
+        </div>
+
+        <!-- Trade Range Footnote -->
+        <div class="p-3 rounded-lg bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700 text-xs text-slate-600 dark:text-slate-400 space-y-1">
+          <div class="flex items-center gap-2 font-semibold text-slate-800 dark:text-slate-200">
+            <span>ℹ️ Market Expectation Methodology & Analysis Note:</span>
+          </div>
+          <p class="text-[11px] leading-relaxed">
+            <strong>Pre-Report Trade Expected Ranges</strong> reflect market surveys of grain and oilseed analysts/traders (conducted ahead of each Thursday 08:30 AM release by Reuters, Bloomberg, and institutional desks). Net sales above the expected range indicate stronger-than-expected commercial demand (bullish for basis/futures), while net sales below indicate demand lag (bearish). Click any commodity row or the <strong>"View Chart →"</strong> button to open that commodity's 11-year seasonal progression, destination breakdowns (China, Mexico, Japan, etc.), and pacing trajectory.
+          </p>
+        </div>
+      </div>
+
+      <!-- Multi-Commodity Annual Target Pacing Cards (5 Cards) -->
+      <div class="stat-card rounded-xl p-5 shadow-xs space-y-4">
+        <div class="pb-2 border-b border-[var(--border,#e2e8f0)]">
+          <h2 class="text-base font-bold text-[var(--foreground,#0f172a)]">
+            🎯 Annual Export Target Pacing Overview (USDA WASDE / PSD)
+          </h2>
+          <p class="text-xs text-[var(--muted-foreground,#64748b)]">
+            Current total commitments vs official USDA full-marketing-year export projections
+          </p>
+        </div>
+
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3.5" id="summary-pacing-cards">
+          <!-- 5 Cards populated dynamically -->
+        </div>
+      </div>
+    </div>
+
+    <!-- ===================================================================== -->
+    <!-- SINGLE COMMODITY VIEW CONTAINER (Corn, Soybeans, Wheat, Meal, Oil)    -->
+    <!-- ===================================================================== -->
+    <div id="commodity-view-container" class="space-y-5" style="display: none;">
+      <!-- Executive KPI Cards -->
+      <div class="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4">
       <div class="stat-card rounded-xl p-4 shadow-xs">
         <div class="text-xs font-medium text-[var(--muted-foreground,#64748b)] uppercase tracking-wider" id="kpi-cmy-title">Total Commitments</div>
         <div class="text-2xl font-extrabold text-[var(--foreground,#0f172a)] mt-1" id="kpi-cmy-tot">--</div>
@@ -413,14 +528,15 @@
         </table>
       </div>
     </div>
+    </div> <!-- /commodity-view-container -->
 
-  </div>
+  </div> <!-- /main container -->
 
   <script>
     // Embedded Multi-Commodity Payload with FAS Series & USDA Targets
     const COMMODITIES = {{COMMODITIES_PAYLOAD}};
 
-    let currentCommodity = 'corn';
+    let currentCommodity = 'summary'; // Default to 'summary' on load
     let currentUnit = 'kmt'; // 'kmt' or 'mnt'
     let currentCategory = 'tot'; // 'tot', 'acc', 'out', 'pacing'
     let currentPacingYear = 'nmy_2026_27'; // 'nmy_2026_27' or 'cmy_2025_26'
@@ -451,37 +567,93 @@
 
     function init() {
       renderCommodityTabs();
-      applyPreset('all');
-      renderLegend();
       setupCanvasEvents();
-      window.addEventListener('resize', () => drawChart());
-      renderPacingTracker();
+      window.addEventListener('resize', () => {
+        if (currentCommodity !== 'summary') drawChart();
+      });
+
+      if (currentCommodity === 'summary') {
+        const sumCont = document.getElementById('summary-view-container');
+        const commCont = document.getElementById('commodity-view-container');
+        const destWrapper = document.getElementById('dest-dropdown-wrapper');
+        if (sumCont) sumCont.style.display = 'block';
+        if (commCont) commCont.style.display = 'none';
+        if (destWrapper) destWrapper.style.display = 'none';
+        const pageTitle = document.getElementById('page-title');
+        if (pageTitle) pageTitle.textContent = 'Consolidated US Agricultural Export Sales Intelligence';
+        renderSummaryView();
+      } else {
+        const sumCont = document.getElementById('summary-view-container');
+        const commCont = document.getElementById('commodity-view-container');
+        if (sumCont) sumCont.style.display = 'none';
+        if (commCont) commCont.style.display = 'block';
+        applyPreset('all');
+        renderLegend();
+        renderPacingTracker();
+      }
     }
 
     function switchCommodity(cKey) {
       if (cKey === currentCommodity) return;
       currentCommodity = cKey;
       renderCommodityTabs();
-      applyPreset(currentDestScope === 'custom' ? 'all' : currentDestScope);
-      renderPacingTracker();
+
+      const sumCont = document.getElementById('summary-view-container');
+      const commCont = document.getElementById('commodity-view-container');
+      const destWrapper = document.getElementById('dest-dropdown-wrapper');
+
+      if (cKey === 'summary') {
+        if (sumCont) sumCont.style.display = 'block';
+        if (commCont) commCont.style.display = 'none';
+        if (destWrapper) destWrapper.style.display = 'none';
+        const pageTitle = document.getElementById('page-title');
+        if (pageTitle) pageTitle.textContent = 'Consolidated US Agricultural Export Sales Intelligence';
+        renderSummaryView();
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+      } else {
+        if (sumCont) sumCont.style.display = 'none';
+        if (commCont) commCont.style.display = 'block';
+        if (destWrapper) destWrapper.style.display = 'block';
+        applyPreset(currentDestScope === 'custom' ? 'all' : currentDestScope);
+        renderPacingTracker();
+        renderLegend();
+        drawChart();
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+      }
     }
 
     function renderCommodityTabs() {
       const container = document.getElementById('commodity-tabs-container');
       container.innerHTML = '';
-      Object.keys(COMMODITIES).forEach(key => {
-        const item = COMMODITIES[key];
+
+      const tabDefs = [
+        { key: 'summary', label: '📊 Summary' },
+        { key: 'corn', label: '🌽 Corn' },
+        { key: 'soybeans', label: '🌿 Soybeans' },
+        { key: 'wheat', label: '🌾 Wheat' },
+        { key: 'meal', label: '📦 Soybean Meal' },
+        { key: 'oil', label: '🫗 Soybean Oil' }
+      ];
+
+      tabDefs.forEach(t => {
+        if (t.key !== 'summary' && !COMMODITIES[t.key]) return;
+
         const btn = document.createElement('button');
         btn.className = `commodity-tab px-3.5 py-1.5 rounded-lg border text-xs font-semibold transition-all ${
-          key === currentCommodity ? 'active shadow-xs' : 'border-[var(--border,#cbd5e1)] bg-[var(--card,#ffffff)] text-[var(--muted-foreground,#64748b)] hover:bg-[var(--secondary,#f1f5f9)]'
+          t.key === currentCommodity ? 'active shadow-xs' : 'border-[var(--border,#cbd5e1)] bg-[var(--card,#ffffff)] text-[var(--muted-foreground,#64748b)] hover:bg-[var(--secondary,#f1f5f9)]'
         }`;
-        btn.onclick = () => switchCommodity(key);
-        btn.textContent = item.commodity;
+        btn.onclick = () => switchCommodity(t.key);
+        btn.textContent = t.label;
         container.appendChild(btn);
       });
 
+      const destWrapper = document.getElementById('dest-dropdown-wrapper');
+      if (destWrapper) {
+        destWrapper.style.display = (currentCommodity === 'summary') ? 'none' : 'block';
+      }
+
       const pkg = COMMODITIES[currentCommodity];
-      const hasChina = pkg && pkg.destinations.some(d => d.id === 'china' || d.id.includes('china'));
+      const hasChina = pkg && pkg.destinations && pkg.destinations.some(d => d.id === 'china' || d.id.includes('china'));
       const chinaBtn = document.getElementById('preset-btn-china');
       if (chinaBtn) {
         chinaBtn.style.display = hasChina ? 'block' : 'none';
@@ -653,8 +825,12 @@
     function setUnit(u) {
       currentUnit = u;
       syncUnitButtons();
-      updateView();
-      renderPacingTracker();
+      if (currentCommodity === 'summary') {
+        renderSummaryView();
+      } else {
+        updateView();
+        renderPacingTracker();
+      }
     }
 
     function syncUnitButtons() {
@@ -667,6 +843,8 @@
       }`;
       const badge = document.getElementById('table-unit-badge');
       if (badge) badge.textContent = `Unit: ${isKmt ? '1,000 MT' : 'mn t'}`;
+      const sumBadge = document.getElementById('sum-table-unit-badge');
+      if (sumBadge) sumBadge.textContent = `Unit: ${isKmt ? '1,000 MT' : 'mn t'}`;
     }
 
     function setChartCategory(cat) {
@@ -1521,6 +1699,247 @@
         `;
         tbody.appendChild(tr);
       });
+    }
+
+    function renderSummaryView() {
+      const sumData = COMMODITIES.summary;
+      if (!sumData) return;
+
+      const isKmt = currentUnit === 'kmt';
+      const unitLabel = isKmt ? '1,000 MT' : 'mn t';
+      const mult = isKmt ? 0.001 : 1e-6; // convert raw MT to kmt or mnt
+
+      // Update unit badge
+      const unitBadge = document.getElementById('sum-table-unit-badge');
+      if (unitBadge) unitBadge.textContent = `Unit: ${unitLabel}`;
+
+      const totalsRaw = sumData.totals.raw;
+      const totNet = totalsRaw.net_cmy * mult;
+      const totExp = totalsRaw.weekly_export * mult;
+      const totOut = totalsRaw.out_cmy * mult;
+      const totCommit = totalsRaw.tot_cmy * mult;
+      const totTarget = totalsRaw.target * mult;
+      const totPct = sumData.totals.pct_booked;
+
+      // 1. KPI Cards
+      const netEl = document.getElementById('sum-kpi-net');
+      if (netEl) netEl.textContent = (totNet >= 0 ? '+' : '') + fmtVal(totNet, isKmt);
+
+      const expEl = document.getElementById('sum-kpi-export');
+      if (expEl) expEl.textContent = fmtVal(totExp, isKmt);
+
+      const outEl = document.getElementById('sum-kpi-out');
+      if (outEl) outEl.textContent = fmtVal(totOut, isKmt);
+
+      const totEl = document.getElementById('sum-kpi-tot');
+      if (totEl) totEl.textContent = fmtVal(totCommit, isKmt);
+
+      const pacingDesc = document.getElementById('sum-kpi-pacing-desc');
+      if (pacingDesc) pacingDesc.textContent = `${totPct.toFixed(1)}% of USDA Target (${fmtVal(totTarget, isKmt)} ${unitLabel})`;
+
+      // 2. Summary Table Body
+      const tbody = document.getElementById('summary-table-tbody');
+      if (tbody) {
+        tbody.innerHTML = '';
+        sumData.commodities.forEach(c => {
+          const raw = c.raw;
+          const netCmy = raw.net_cmy * mult;
+          const wkExp = raw.weekly_export * mult;
+          const accCmy = raw.acc_cmy * mult;
+          const outCmy = raw.out_cmy * mult;
+          const totCmy = raw.tot_cmy * mult;
+          const netNmy = raw.net_nmy * mult;
+          const target = raw.target * mult;
+          const pctBooked = c.pct_booked;
+
+          // Trade range formatted
+          let rangeStr = '';
+          if (isKmt) {
+            rangeStr = `${c.trade_range_low_kmt.toLocaleString()} – ${c.trade_range_high_kmt.toLocaleString()}`;
+          } else {
+            const lowMn = (c.trade_range_low_kmt / 1000.0).toFixed(2);
+            const highMn = (c.trade_range_high_kmt / 1000.0).toFixed(2);
+            rangeStr = `${lowMn} – ${highMn}`;
+          }
+
+          // Signal badge
+          let badgeBg = 'bg-blue-100 text-blue-800 dark:bg-blue-900/40 dark:text-blue-300';
+          let signalIcon = '●';
+          let signalText = 'Within Range';
+          if (c.signal === 'above') {
+            badgeBg = 'bg-emerald-100 text-emerald-800 dark:bg-emerald-900/40 dark:text-emerald-300';
+            signalIcon = '▲';
+            signalText = 'Above Range';
+          } else if (c.signal === 'below') {
+            badgeBg = 'bg-rose-100 text-rose-800 dark:bg-rose-900/40 dark:text-rose-300';
+            signalIcon = '▼';
+            signalText = 'Below Range';
+          }
+
+          const tr = document.createElement('tr');
+          tr.className = 'hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors cursor-pointer';
+          tr.onclick = (e) => {
+            if (e.target.tagName !== 'BUTTON') {
+              switchCommodity(c.key);
+            }
+          };
+
+          tr.innerHTML = `
+            <td class="py-3 px-3.5">
+              <div class="flex items-center gap-2">
+                <span class="text-base">${c.emoji}</span>
+                <div>
+                  <div class="font-bold text-slate-800 dark:text-slate-100 text-xs">${c.name}</div>
+                  <div class="text-[10px] text-slate-500">${c.season_phase}</div>
+                </div>
+              </div>
+            </td>
+            <td class="py-3 px-3 text-right font-mono text-slate-600 dark:text-slate-400 font-semibold" title="Source: ${c.source}">
+              ${rangeStr}
+            </td>
+            <td class="py-3 px-3 text-right font-mono font-bold ${netCmy >= 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-600 dark:text-rose-400'}">
+              ${netCmy >= 0 ? '+' : ''}${fmtVal(netCmy, isKmt)}
+            </td>
+            <td class="py-3 px-3 text-center">
+              <span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold ${badgeBg}">
+                <span>${signalIcon}</span>
+                <span>${signalText}</span>
+              </span>
+            </td>
+            <td class="py-3 px-3 text-right font-mono font-semibold text-blue-600 dark:text-blue-400">
+              ${fmtVal(wkExp, isKmt)}
+            </td>
+            <td class="py-3 px-3 text-right font-mono text-slate-700 dark:text-slate-300">
+              ${fmtVal(accCmy, isKmt)}
+            </td>
+            <td class="py-3 px-3 text-right font-mono text-amber-700 dark:text-amber-400">
+              ${fmtVal(outCmy, isKmt)}
+            </td>
+            <td class="py-3 px-3 text-right font-mono font-bold text-slate-900 dark:text-white">
+              ${fmtVal(totCmy, isKmt)}
+            </td>
+            <td class="py-3 px-3 text-right font-mono text-slate-500">
+              ${netNmy > 0 ? '+' : ''}${fmtVal(netNmy, isKmt)}
+            </td>
+            <td class="py-3 px-3 text-right font-mono text-slate-700 dark:text-slate-300">
+              ${fmtVal(target, isKmt)}
+            </td>
+            <td class="py-3 px-3 text-center">
+              <div class="flex items-center justify-center gap-1.5">
+                <div class="w-12 bg-slate-200 dark:bg-slate-700 rounded-full h-1.5 overflow-hidden">
+                  <div class="h-1.5 rounded-full ${pctBooked >= 100 ? 'bg-emerald-500' : pctBooked >= 35 ? 'bg-blue-600' : 'bg-amber-500'}" style="width: ${Math.min(pctBooked, 100)}%"></div>
+                </div>
+                <span class="font-mono font-bold text-xs ${pctBooked >= 100 ? 'text-emerald-600 font-extrabold' : 'text-slate-800 dark:text-slate-200'}">${pctBooked.toFixed(1)}%</span>
+              </div>
+            </td>
+            <td class="py-3 px-3 text-center">
+              <button onclick="switchCommodity('${c.key}')" class="px-2.5 py-1 text-[11px] font-bold rounded-md bg-blue-50 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300 hover:bg-blue-100 transition-all border border-blue-200 dark:border-blue-800">
+                View Chart →
+              </button>
+            </td>
+          `;
+          tbody.appendChild(tr);
+        });
+      }
+
+      // 3. Summary Table Footer (Grand Totals)
+      const tfoot = document.getElementById('summary-table-tfoot');
+      if (tfoot) {
+        const totNetNmy = totalsRaw.net_nmy * mult;
+        tfoot.innerHTML = `
+          <tr class="text-xs">
+            <td class="py-3 px-3.5 text-slate-900 dark:text-white">
+              <div class="font-extrabold flex items-center gap-1.5">
+                <span>🌎</span>
+                <span>TOTAL ALL COMMODITIES</span>
+              </div>
+            </td>
+            <td class="py-3 px-3 text-right text-slate-400 font-mono text-[11px]">—</td>
+            <td class="py-3 px-3 text-right font-mono font-extrabold ${totNet >= 0 ? 'text-emerald-700 dark:text-emerald-400' : 'text-rose-700 dark:text-rose-400'}">
+              ${totNet >= 0 ? '+' : ''}${fmtVal(totNet, isKmt)}
+            </td>
+            <td class="py-3 px-3 text-center">
+              <span class="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-bold bg-slate-200 text-slate-800 dark:bg-slate-700 dark:text-slate-200">
+                5 Complexes
+              </span>
+            </td>
+            <td class="py-3 px-3 text-right font-mono font-extrabold text-blue-700 dark:text-blue-400">
+              ${fmtVal(totExp, isKmt)}
+            </td>
+            <td class="py-3 px-3 text-right font-mono font-bold text-slate-800 dark:text-slate-200">
+              ${fmtVal(totalsRaw.acc_cmy * mult, isKmt)}
+            </td>
+            <td class="py-3 px-3 text-right font-mono font-bold text-amber-700 dark:text-amber-400">
+              ${fmtVal(totOut, isKmt)}
+            </td>
+            <td class="py-3 px-3 text-right font-mono font-extrabold text-slate-900 dark:text-white">
+              ${fmtVal(totCommit, isKmt)}
+            </td>
+            <td class="py-3 px-3 text-right font-mono font-bold text-slate-600 dark:text-slate-300">
+              ${totNetNmy > 0 ? '+' : ''}${fmtVal(totNetNmy, isKmt)}
+            </td>
+            <td class="py-3 px-3 text-right font-mono font-bold text-slate-800 dark:text-slate-200">
+              ${fmtVal(totTarget, isKmt)}
+            </td>
+            <td class="py-3 px-3 text-center font-mono font-extrabold text-blue-700 dark:text-blue-400">
+              ${totPct.toFixed(1)}%
+            </td>
+            <td class="py-3 px-3 text-center text-slate-400">—</td>
+          </tr>
+        `;
+      }
+
+      // 4. Annual Target Pacing Cards (5 Cards)
+      const pacingCards = document.getElementById('summary-pacing-cards');
+      if (pacingCards) {
+        pacingCards.innerHTML = '';
+        sumData.commodities.forEach(c => {
+          const raw = c.raw;
+          const totCmy = raw.tot_cmy * mult;
+          const target = raw.target * mult;
+          const pct = c.pct_booked;
+          const rem = Math.max(0, target - totCmy);
+
+          const card = document.createElement('div');
+          card.className = 'border border-[var(--border,#cbd5e1)] rounded-lg p-3.5 bg-[var(--card,#ffffff)] hover:border-blue-400 transition-all cursor-pointer flex flex-col justify-between';
+          card.onclick = () => switchCommodity(c.key);
+
+          card.innerHTML = `
+            <div class="space-y-2">
+              <div class="flex items-center justify-between">
+                <span class="font-bold text-sm text-slate-800 dark:text-slate-100">${c.emoji} ${c.name}</span>
+                <span class="text-[10px] font-bold px-1.5 py-0.5 rounded ${pct >= 100 ? 'bg-emerald-100 text-emerald-800' : pct >= 35 ? 'bg-blue-100 text-blue-800' : 'bg-amber-100 text-amber-800'}">
+                  ${pct.toFixed(1)}%
+                </span>
+              </div>
+
+              <div class="space-y-1">
+                <div class="flex justify-between text-[11px]">
+                  <span class="text-slate-500">Booked:</span>
+                  <span class="font-mono font-bold text-slate-800 dark:text-slate-200">${fmtVal(totCmy, isKmt)} ${unitLabel}</span>
+                </div>
+                <div class="flex justify-between text-[11px]">
+                  <span class="text-slate-500">USDA Target:</span>
+                  <span class="font-mono text-slate-600 dark:text-slate-400">${fmtVal(target, isKmt)} ${unitLabel}</span>
+                </div>
+              </div>
+
+              <div class="w-full bg-slate-100 dark:bg-slate-700 rounded-full h-2 overflow-hidden mt-1">
+                <div class="h-2 rounded-full ${pct >= 100 ? 'bg-emerald-500' : pct >= 35 ? 'bg-blue-600' : 'bg-amber-500'}" style="width: ${Math.min(pct, 100)}%"></div>
+              </div>
+
+              <div class="text-[10px] text-slate-500 text-right">
+                ${pct >= 100 ? '<span class="text-emerald-600 font-bold">🎯 Target Met!</span>' : `Remaining: ${fmtVal(rem, isKmt)} ${unitLabel}`}
+              </div>
+            </div>
+
+            <button onclick="event.stopPropagation(); switchCommodity('${c.key}')" class="mt-3 w-full py-1 text-[11px] font-semibold rounded bg-slate-50 hover:bg-blue-50 text-blue-600 border border-slate-200 hover:border-blue-300 transition-colors text-center">
+              Open ${c.name} →
+            </button>
+          `;
+          pacingCards.appendChild(card);
+        });
+      }
     }
 
     function fmtVal(v, isKmt = true) {
