@@ -319,33 +319,6 @@
         </div>
       </div>
 
-      <!-- Inspections Executive KPI Cards -->
-      <div class="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4">
-        <div class="stat-card rounded-xl p-4 shadow-xs">
-          <div class="text-xs font-medium text-[var(--muted-foreground,#64748b)] uppercase tracking-wider">Weekly Inspected (Total)</div>
-          <div class="text-2xl font-extrabold text-blue-600 dark:text-blue-400 mt-1" id="insp-kpi-tot">--</div>
-          <div class="text-[11px] text-[var(--muted-foreground,#64748b)] mt-1 truncate" id="insp-kpi-tot-desc">All Grains Inspected for Export</div>
-        </div>
-
-        <div class="stat-card rounded-xl p-4 shadow-xs">
-          <div class="text-xs font-medium text-[var(--muted-foreground,#64748b)] uppercase tracking-wider">Corn Inspected</div>
-          <div class="text-2xl font-extrabold text-amber-600 dark:text-amber-400 mt-1" id="insp-kpi-corn">--</div>
-          <div class="text-[11px] text-[var(--muted-foreground,#64748b)] mt-1 truncate" id="insp-kpi-corn-desc">MYTD: -- (+14.4% YoY)</div>
-        </div>
-
-        <div class="stat-card rounded-xl p-4 shadow-xs">
-          <div class="text-xs font-medium text-[var(--muted-foreground,#64748b)] uppercase tracking-wider">Soybean Inspected</div>
-          <div class="text-2xl font-extrabold text-emerald-600 dark:text-emerald-400 mt-1" id="insp-kpi-soy">--</div>
-          <div class="text-[11px] text-[var(--muted-foreground,#64748b)] mt-1 truncate" id="insp-kpi-soy-desc">MYTD: -- (+24.4% YoY)</div>
-        </div>
-
-        <div class="stat-card rounded-xl p-4 shadow-xs">
-          <div class="text-xs font-medium text-[var(--muted-foreground,#64748b)] uppercase tracking-wider">Wheat Inspected</div>
-          <div class="text-2xl font-extrabold text-purple-600 dark:text-purple-400 mt-1" id="insp-kpi-wheat">--</div>
-          <div class="text-[11px] text-[var(--muted-foreground,#64748b)] mt-1 truncate" id="insp-kpi-wheat-desc">MYTD: -- (27.1% WASDE Target)</div>
-        </div>
-      </div>
-
       <!-- Weekly Inspections Table vs Pre-Report Trade Expectations -->
       <div class="stat-card rounded-xl p-5 shadow-xs space-y-4">
         <div class="flex flex-col md:flex-row md:items-center justify-between gap-3 pb-3 border-b border-[var(--border,#e2e8f0)]">
@@ -516,27 +489,53 @@
           </div>
         </div>
 
-        <!-- Destinations Breakdown -->
+        <!-- Destinations Breakdown with Independent Same-Period Comparison -->
         <div class="stat-card rounded-xl p-5 shadow-xs space-y-3">
-          <div class="pb-2 border-b border-[var(--border,#e2e8f0)] flex items-center justify-between">
+          <div class="pb-3 border-b border-[var(--border,#e2e8f0)] flex flex-col sm:flex-row sm:items-center justify-between gap-2.5">
             <div>
-              <h3 class="text-sm font-bold text-slate-900 dark:text-white">
-                🌍 Top Export Destinations (Inspections Certified)
-              </h3>
-              <p class="text-[11px] text-slate-500">
-                Primary overseas buyers receiving physical shipments this week
+              <div class="flex items-center gap-2">
+                <h3 class="text-sm font-bold text-slate-900 dark:text-white">
+                  🌍 Top Export Destinations (Historical Comparison)
+                </h3>
+                <span class="text-[11px] font-semibold px-2 py-0.5 rounded bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300" id="insp-dests-grain-label">Corn</span>
+              </div>
+              <p class="text-[11px] text-slate-500 mt-0.5">
+                Compare current 2026/27 volume against selected benchmark year to see gaining vs lagging buyers
               </p>
             </div>
-            <span class="text-[11px] font-semibold px-2 py-0.5 rounded bg-slate-100 text-slate-700" id="insp-dests-grain-label">Corn</span>
+
+            <!-- Independent controls inside this box only! -->
+            <div class="flex flex-wrap items-center gap-2">
+              <!-- Period Mode Toggle (Weekly vs MYTD) -->
+              <div class="inline-flex rounded-lg border border-[var(--border,#cbd5e1)] p-0.5 bg-[var(--secondary,#f1f5f9)] text-[11px] font-semibold">
+                <button id="insp-dest-btn-weekly" onclick="setDestPeriodMode('weekly')" class="px-2.5 py-1 rounded-md bg-white text-slate-900 shadow-xs font-bold transition-all">📅 Weekly (Same Wk)</button>
+                <button id="insp-dest-btn-mytd" onclick="setDestPeriodMode('mytd')" class="px-2.5 py-1 rounded-md text-slate-600 hover:text-slate-900 font-medium transition-all">📈 Cumulative (MYTD)</button>
+              </div>
+
+              <!-- Independent Compare Year Dropdown -->
+              <div class="flex items-center gap-1.5">
+                <label for="insp-dest-compare-year" class="text-[11px] font-semibold text-slate-500 whitespace-nowrap">vs:</label>
+                <select id="insp-dest-compare-year" onchange="renderInspectionsDestinationsTable()" class="text-xs font-bold py-1 px-2.5 rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-200 shadow-xs focus:ring-1 focus:ring-blue-500 cursor-pointer">
+                  <option value="2025-26" selected>2025/26 (Prior Year)</option>
+                  <option value="2024-25">2024/25</option>
+                  <option value="2023-24">2023/24</option>
+                  <option value="2022-23">2022/23</option>
+                  <option value="2021-22">2021/22</option>
+                  <option value="5yr_avg">5-Year Average</option>
+                </select>
+              </div>
+            </div>
           </div>
 
-          <div class="overflow-x-auto border border-[var(--border,#e2e8f0)] rounded-lg">
+          <div class="overflow-x-auto max-h-[460px] custom-scrollbar border border-[var(--border,#e2e8f0)] rounded-lg">
             <table class="w-full text-left text-xs whitespace-nowrap">
-              <thead class="bg-slate-50 dark:bg-slate-900 border-b border-[var(--border,#cbd5e1)] text-[11px] font-bold text-slate-700 dark:text-slate-300">
+              <thead class="bg-slate-50 dark:bg-slate-900 border-b border-[var(--border,#cbd5e1)] text-[11px] font-bold sticky top-0 z-10 text-slate-700 dark:text-slate-300">
                 <tr>
                   <th class="py-2.5 px-3">Destination Country</th>
-                  <th class="py-2.5 px-3 text-right">Volume</th>
-                  <th class="py-2.5 px-3 text-right">Share (%)</th>
+                  <th class="py-2.5 px-3 text-right">2026/27 (Current)</th>
+                  <th class="py-2.5 px-3 text-right" id="insp-dest-th-compare">2025/26</th>
+                  <th class="py-2.5 px-3 text-right">Variance (+/-)</th>
+                  <th class="py-2.5 px-3 text-center">Trend / Status</th>
                 </tr>
               </thead>
               <tbody class="divide-y divide-[var(--border,#e2e8f0)]" id="insp-dests-tbody">
@@ -2400,39 +2399,7 @@
         relBadge.textContent = `Week Ending ${insp.cutoff_date} (Released Mon ${insp.release_date})`;
       }
 
-      // 2. Executive KPI Cards
-      const totKpi = document.getElementById('insp-kpi-tot');
-      const totDesc = document.getElementById('insp-kpi-tot-desc');
-      if (totKpi && insp.totals) {
-        totKpi.textContent = `${fmtVal(insp.totals.weekly_actual_kmt * mult, isKmt)} ${unitLabel}`;
-        totDesc.textContent = `MYTD: ${fmtVal(insp.totals.mytd_cumulative_kmt * mult, isKmt)} (${insp.totals.yoy_pct >= 0 ? '+' : ''}${insp.totals.yoy_pct}% YoY)`;
-      }
-
-      const cornRow = insp.summary_table.find(r => r.key === 'corn');
-      if (cornRow) {
-        const cornKpi = document.getElementById('insp-kpi-corn');
-        const cornDesc = document.getElementById('insp-kpi-corn-desc');
-        if (cornKpi) cornKpi.textContent = `${fmtVal(cornRow.weekly_actual_kmt * mult, isKmt)} ${unitLabel}`;
-        if (cornDesc) cornDesc.textContent = `MYTD: ${fmtVal(cornRow.mytd_cumulative_kmt * mult, isKmt)} (${cornRow.yoy_pct >= 0 ? '+' : ''}${cornRow.yoy_pct}% YoY)`;
-      }
-
-      const soyRow = insp.summary_table.find(r => r.key === 'soybeans');
-      if (soyRow) {
-        const soyKpi = document.getElementById('insp-kpi-soy');
-        const soyDesc = document.getElementById('insp-kpi-soy-desc');
-        if (soyKpi) soyKpi.textContent = `${fmtVal(soyRow.weekly_actual_kmt * mult, isKmt)} ${unitLabel}`;
-        if (soyDesc) soyDesc.textContent = `MYTD: ${fmtVal(soyRow.mytd_cumulative_kmt * mult, isKmt)} (${soyRow.yoy_pct >= 0 ? '+' : ''}${soyRow.yoy_pct}% YoY)`;
-      }
-
-      const wheatRow = insp.summary_table.find(r => r.key === 'wheat');
-      if (wheatRow) {
-        const wheatKpi = document.getElementById('insp-kpi-wheat');
-        const wheatDesc = document.getElementById('insp-kpi-wheat-desc');
-        if (wheatKpi) wheatKpi.textContent = `${fmtVal(wheatRow.weekly_actual_kmt * mult, isKmt)} ${unitLabel}`;
-        if (wheatDesc) wheatDesc.textContent = `MYTD: ${fmtVal(wheatRow.mytd_cumulative_kmt * mult, isKmt)} (${wheatRow.pct_target_inspected.toFixed(1)}% WASDE Target)`;
-      }
-
-      // 3. Inspections Summary Table
+      // 2. Inspections Summary Table
       const tbody = document.getElementById('insp-table-tbody');
       if (tbody) {
         tbody.innerHTML = '';
@@ -3107,33 +3074,144 @@
         });
       }
 
-      // 2. Destinations
-      const destsTbody = document.getElementById('insp-dests-tbody');
-      if (destsTbody) {
-        destsTbody.innerHTML = '';
-        const destList = (insp.destinations && insp.destinations[currentInspectionsCommodity]) || [];
-        const totDestMt = destList.reduce((acc, d) => acc + (d.mt || 0), 0);
+      // 2. Destinations (Independent Historical Same-Period Comparison)
+      renderInspectionsDestinationsTable();
+    }
 
-        destList.forEach(d => {
-          const val = (d.kmt || 0) * mult;
-          const pct = totDestMt > 0 ? ((d.mt / totDestMt) * 100) : 0;
-          const tr = document.createElement('tr');
-          tr.className = 'hover:bg-slate-50 dark:hover:bg-slate-800/40 transition-colors';
-          tr.innerHTML = `
-            <td class="py-2 px-3 font-semibold text-slate-800 dark:text-slate-200">${d.destination}</td>
-            <td class="py-2 px-3 text-right font-mono font-bold text-emerald-700 dark:text-emerald-400">${fmtVal(val, isKmt)} ${unitLabel}</td>
-            <td class="py-2 px-3 text-right">
-              <div class="flex items-center justify-end gap-2">
-                <div class="w-14 bg-slate-200 dark:bg-slate-700 rounded-full h-1.5 overflow-hidden">
-                  <div class="h-1.5 rounded-full bg-emerald-600" style="width: ${Math.min(pct, 100)}%"></div>
-                </div>
-                <span class="font-mono text-xs font-semibold text-slate-700 dark:text-slate-300 w-10 text-right">${pct.toFixed(1)}%</span>
-              </div>
-            </td>
-          `;
-          destsTbody.appendChild(tr);
-        });
+    let currentDestPeriodMode = 'weekly'; // 'weekly' or 'mytd'
+    let currentDestCompareYear = '2025-26'; // '2025-26', '2024-25', '2023-24', '2022-23', '2021-22', '5yr_avg'
+
+    function setDestPeriodMode(mode) {
+      currentDestPeriodMode = mode;
+      const btnWk = document.getElementById('insp-dest-btn-weekly');
+      const btnMytd = document.getElementById('insp-dest-btn-mytd');
+      if (btnWk && btnMytd) {
+        if (mode === 'weekly') {
+          btnWk.className = 'px-2.5 py-1 rounded-md bg-white text-slate-900 shadow-xs font-bold transition-all';
+          btnMytd.className = 'px-2.5 py-1 rounded-md text-slate-600 hover:text-slate-900 font-medium transition-all';
+        } else {
+          btnMytd.className = 'px-2.5 py-1 rounded-md bg-white text-slate-900 shadow-xs font-bold transition-all';
+          btnWk.className = 'px-2.5 py-1 rounded-md text-slate-600 hover:text-slate-900 font-medium transition-all';
+        }
       }
+      renderInspectionsDestinationsTable();
+    }
+
+    function renderInspectionsDestinationsTable() {
+      const insp = COMMODITIES.inspections;
+      if (!insp) return;
+
+      const yearSelect = document.getElementById('insp-dest-compare-year');
+      if (yearSelect) {
+        currentDestCompareYear = yearSelect.value;
+      }
+
+      const thCompare = document.getElementById('insp-dest-th-compare');
+      if (thCompare) {
+        const yrLabel = currentDestCompareYear === '5yr_avg' ? '5-Yr Avg' : currentDestCompareYear;
+        thCompare.textContent = `${yrLabel} (${currentDestPeriodMode === 'weekly' ? 'Same Wk' : 'MYTD'})`;
+      }
+
+      const isKmt = currentUnit === 'kmt';
+      const mult = isKmt ? 1.0 : 0.001;
+      const unitLabel = isKmt ? 'k MT' : 'mn t';
+
+      const tbody = document.getElementById('insp-dests-tbody');
+      if (!tbody) return;
+      tbody.innerHTML = '';
+
+      // Check if multi-year comparison payload is available
+      const compCommodity = (insp.destinations_comparison && insp.destinations_comparison[currentInspectionsCommodity]) || null;
+      let currMap = {};
+      let prevMap = {};
+
+      if (compCommodity && compCommodity[currentDestPeriodMode]) {
+        currMap = compCommodity[currentDestPeriodMode]['2026-27'] || {};
+        prevMap = compCommodity[currentDestPeriodMode][currentDestCompareYear] || {};
+      } else {
+        // Fallback to legacy single-week list if comparison not yet generated
+        const legacyList = (insp.destinations && insp.destinations[currentInspectionsCommodity]) || [];
+        legacyList.forEach(d => { currMap[d.destination] = d.kmt || 0; });
+      }
+
+      // Collect all destination names
+      const allDests = Array.from(new Set([...Object.keys(currMap), ...Object.keys(prevMap)]));
+
+      // Calculate diffs and status
+      const items = allDests.map(d => {
+        const curr = (currMap[d] || 0) * mult;
+        const prev = (prevMap[d] || 0) * mult;
+        const diff = curr - prev;
+        let pct = 0;
+        let status = 'flat';
+        let badgeBg = 'bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300';
+        let badgeText = '● Flat';
+
+        if (prev === 0 && curr > 0) {
+          status = 'new';
+          badgeBg = 'bg-indigo-100 text-indigo-800 dark:bg-indigo-900/40 dark:text-indigo-300';
+          badgeText = '★ New Buyer';
+        } else if (prev > 0 && curr === 0) {
+          status = 'none';
+          badgeBg = 'bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-400';
+          badgeText = '⏸ No Shipments';
+        } else if (diff > 0) {
+          status = 'gaining';
+          pct = prev > 0 ? ((diff / prev) * 100) : 0;
+          badgeBg = 'bg-emerald-100 text-emerald-800 dark:bg-emerald-900/40 dark:text-emerald-300';
+          badgeText = `▲ +${pct.toFixed(1)}% Gaining`;
+        } else if (diff < 0) {
+          status = 'lagging';
+          pct = prev > 0 ? ((diff / prev) * 100) : 0;
+          badgeBg = 'bg-rose-100 text-rose-800 dark:bg-rose-900/40 dark:text-rose-300';
+          badgeText = `▼ ${pct.toFixed(1)}% Lagging`;
+        }
+
+        return { dest: d, curr, prev, diff, pct, status, badgeBg, badgeText };
+      });
+
+      // Sort: Active current buyers by volume desc, then former buyers by prev volume desc
+      items.sort((a, b) => {
+        if (a.curr > 0 && b.curr > 0) return b.curr - a.curr;
+        if (a.curr > 0 && b.curr === 0) return -1;
+        if (a.curr === 0 && b.curr > 0) return 1;
+        return b.prev - a.prev;
+      });
+
+      if (items.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="5" class="py-4 text-center text-slate-400">No destination data available for this selection.</td></tr>';
+        return;
+      }
+
+      items.forEach(it => {
+        const tr = document.createElement('tr');
+        tr.className = 'hover:bg-slate-50 dark:hover:bg-slate-800/40 transition-colors';
+
+        const currStr = it.curr > 0 ? `${fmtVal(it.curr, isKmt)} ${unitLabel}` : '<span class="text-slate-400">-</span>';
+        const prevStr = it.prev > 0 ? `${fmtVal(it.prev, isKmt)} ${unitLabel}` : '<span class="text-slate-400">-</span>';
+
+        let diffStr = '';
+        if (it.diff > 0) {
+          diffStr = `<span class="text-emerald-600 dark:text-emerald-400 font-mono font-bold">+${fmtVal(it.diff, isKmt)}</span>`;
+        } else if (it.diff < 0) {
+          diffStr = `<span class="text-rose-600 dark:text-rose-400 font-mono font-bold">${fmtVal(it.diff, isKmt)}</span>`;
+        } else {
+          diffStr = `<span class="text-slate-400 font-mono">0.0</span>`;
+        }
+
+        tr.innerHTML = `
+          <td class="py-2.5 px-3 font-bold text-slate-800 dark:text-slate-200">${it.dest}</td>
+          <td class="py-2.5 px-3 text-right font-mono font-bold text-slate-900 dark:text-white">${currStr}</td>
+          <td class="py-2.5 px-3 text-right font-mono text-slate-600 dark:text-slate-300">${prevStr}</td>
+          <td class="py-2.5 px-3 text-right font-mono">${diffStr}</td>
+          <td class="py-2.5 px-3 text-center">
+            <span class="px-2 py-0.5 rounded text-[11px] font-bold ${it.badgeBg} inline-block whitespace-nowrap">
+              ${it.badgeText}
+            </span>
+          </td>
+        `;
+        tbody.appendChild(tr);
+      });
     }
 
     function fmtVal(v, isKmt = true) {

@@ -25,7 +25,7 @@ from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
 from email.mime.base import MIMEBase
 from email import encoders
-from datetime import datetime, timezone
+from datetime import datetime, timezone, timedelta
 from collections import defaultdict
 
 BASE_SOCRATA_URL = 'https://agtransport.usda.gov/resource/wnn7-29tu.json'
@@ -562,6 +562,11 @@ DEFAULT_COMMODITY_TRADE_RANGES = {
 }
 
 INSPECTIONS_EXPECTATIONS_DATABASE = {
+    '2026-10-01': {
+        'corn': {'low_kmt': 1100.0, 'high_kmt': 1500.0, 'source': 'Reuters / Trade Survey'},
+        'soybeans': {'low_kmt': 900.0, 'high_kmt': 1400.0, 'source': 'Reuters / Trade Survey'},
+        'wheat': {'low_kmt': 250.0, 'high_kmt': 500.0, 'source': 'Reuters / Trade Survey'}
+    },
     '2026-09-24': {
         'corn': {'low_kmt': 1100.0, 'high_kmt': 1600.0, 'source': 'Reuters / Trade Survey'},
         'soybeans': {'low_kmt': 600.0, 'high_kmt': 1100.0, 'source': 'Reuters / Trade Survey'},
@@ -772,6 +777,134 @@ def get_inspection_myear_and_week(grain, dt_str):
     return myear, week_num
 
 
+def fetch_inspections_destination_comparisons(raw_by_grain_myear):
+    """
+    Fetches weekly same-week and cumulative MYTD export inspections broken down by destination country
+    across the current marketing year (2026-27) and prior 5 marketing years (2021-22 to 2025-26),
+    plus computed 5-year averages.
+    """
+    myears = ['2026-27', '2025-26', '2024-25', '2023-24', '2022-23', '2021-22']
+    grains = [('CORN', 'corn'), ('SOYBEANS', 'soybeans'), ('WHEAT', 'wheat')]
+
+    same_wk_dates_by_grain = {}
+    for g_up, g_key in grains:
+        curr_len = len(raw_by_grain_myear[g_up].get('2026-27', []))
+        dates_map = {}
+        for my in myears:
+            wks = raw_by_grain_myear[g_up].get(my, [])
+            if len(wks) >= curr_len and curr_len > 0:
+                dates_map[my] = wks[curr_len - 1]['date']
+            elif len(wks) > 0:
+                dates_map[my] = wks[-1]['date']
+        same_wk_dates_by_grain[g_key] = dates_map
+
+    # 1. Weekly same-week destinations
+    all_dates = set()
+    for dmap in same_wk_dates_by_grain.values():
+        all_dates.update(dmap.values())
+
+    weekly_dest = defaultdict(lambda: defaultdict(lambda: defaultdict(float)))
+    if all_dates:
+        dates_str = ', '.join([f"'{d}T00:00:00.000'" for d in sorted(all_dates)])
+        wk_params = {
+            '$select': 'date,grain,destination,sum(mt)',
+            '$where': f"grain in ('CORN', 'SOYBEANS', 'WHEAT') and date in ({dates_str})",
+            '$group': 'date,grain,destination',
+            '$limit': 5000
+        }
+        try:
+            wk_url = 'https://agtransport.usda.gov/resource/sruw-w49i.json?' + urllib.parse.urlencode(wk_params)
+            wk_req = urllib.request.urlopen(wk_url, timeout=15)
+            wk_rows = json.loads(wk_req.read().decode('utf-8'))
+            for r in wk_rows:
+                g = r['grain'].lower()
+                d = r['date'][:10]
+                dest = r.get('destination', 'Unknown').title()
+                mt = float(r.get('sum_mt') or 0)
+                dmap = same_wk_dates_by_grain.get(g, {})
+                for my, target_d in dmap.items():
+                    if target_d == d:
+                        weekly_dest[g][my][dest] = round(mt / 1e3, 1)  # in k MT
+                        break
+        except Exception as e:
+            print(f"[WARN] Error fetching weekly destination comparisons: {e}")
+
+    # 2. Cumulative MYTD destinations
+    mytd_dest = defaultdict(lambda: defaultdict(lambda: defaultdict(float)))
+    for my in myears:
+        try:
+            # Corn & Soybeans
+            cs_start_yr = int(my.split('-')[0])
+            cs_start = f"{cs_start_yr}-09-01"
+            cs_end = same_wk_dates_by_grain['corn'].get(my)
+            if cs_end:
+                p_cs = {
+                    '$select': 'grain,destination,sum(mt)',
+                    '$where': f"grain in ('CORN', 'SOYBEANS') and date >= '{cs_start}T00:00:00.000' and date <= '{cs_end}T00:00:00.000'",
+                    '$group': 'grain,destination',
+                    '$limit': 2000
+                }
+                u_cs = 'https://agtransport.usda.gov/resource/sruw-w49i.json?' + urllib.parse.urlencode(p_cs)
+                r_cs = json.loads(urllib.request.urlopen(u_cs, timeout=15).read().decode('utf-8'))
+                for r in r_cs:
+                    g = r['grain'].lower()
+                    dest = r.get('destination', 'Unknown').title()
+                    mt = float(r.get('sum_mt') or 0)
+                    mytd_dest[g][my][dest] = round(mt / 1e3, 1)
+
+            # Wheat
+            w_start_yr = int(my.split('-')[0])
+            w_start = f"{w_start_yr}-06-01"
+            w_end = same_wk_dates_by_grain['wheat'].get(my)
+            if w_end:
+                p_w = {
+                    '$select': 'grain,destination,sum(mt)',
+                    '$where': f"grain = 'WHEAT' and date >= '{w_start}T00:00:00.000' and date <= '{w_end}T00:00:00.000'",
+                    '$group': 'grain,destination',
+                    '$limit': 2000
+                }
+                u_w = 'https://agtransport.usda.gov/resource/sruw-w49i.json?' + urllib.parse.urlencode(p_w)
+                r_w = json.loads(urllib.request.urlopen(u_w, timeout=15).read().decode('utf-8'))
+                for r in r_w:
+                    dest = r.get('destination', 'Unknown').title()
+                    mt = float(r.get('sum_mt') or 0)
+                    mytd_dest['wheat'][my][dest] = round(mt / 1e3, 1)
+        except Exception as e:
+            print(f"[WARN] Error fetching MYTD destinations for {my}: {e}")
+
+    # 3. Compute 5-year averages
+    hist_years = ['2025-26', '2024-25', '2023-24', '2022-23', '2021-22']
+    dest_comparison = {}
+    for g_key in ['corn', 'soybeans', 'wheat']:
+        dest_comparison[g_key] = {'weekly': {}, 'mytd': {}}
+
+        # Weekly
+        all_d_wk = set()
+        for my in myears:
+            dest_comparison[g_key]['weekly'][my] = dict(weekly_dest[g_key][my])
+            all_d_wk.update(weekly_dest[g_key][my].keys())
+        avg_wk = {}
+        for d in all_d_wk:
+            s = sum(weekly_dest[g_key][y].get(d, 0.0) for y in hist_years)
+            if s > 0:
+                avg_wk[d] = round(s / 5.0, 1)
+        dest_comparison[g_key]['weekly']['5yr_avg'] = avg_wk
+
+        # MYTD
+        all_d_mytd = set()
+        for my in myears:
+            dest_comparison[g_key]['mytd'][my] = dict(mytd_dest[g_key][my])
+            all_d_mytd.update(mytd_dest[g_key][my].keys())
+        avg_mytd = {}
+        for d in all_d_mytd:
+            s = sum(mytd_dest[g_key][y].get(d, 0.0) for y in hist_years)
+            if s > 0:
+                avg_mytd[d] = round(s / 5.0, 1)
+        dest_comparison[g_key]['mytd']['5yr_avg'] = avg_mytd
+
+    return dest_comparison
+
+
 def build_export_inspections_data(payload):
     """
     Fetches and builds the official USDA AMS / FGIS Grain Export Inspections data,
@@ -867,6 +1000,9 @@ def build_export_inspections_data(payload):
             })
     except Exception as e:
         print(f"[WARN] Error fetching ports/destinations for inspections: {e}")
+
+    # Fetch multi-year destination comparisons
+    dest_comparisons = fetch_inspections_destination_comparisons(raw_by_grain_myear)
 
     # Build curves & summary items
     curves_by_grain = {}
@@ -1039,8 +1175,18 @@ def build_export_inspections_data(payload):
         }
     }
 
+    cutoff_dt = datetime.strptime(latest_date, '%Y-%m-%d')
+    if cutoff_dt.weekday() == 3:  # Thursday
+        release_dt = cutoff_dt + timedelta(days=4)  # Monday following Thursday
+    else:
+        days_ahead = (0 - cutoff_dt.weekday()) % 7
+        if days_ahead == 0:
+            days_ahead = 7
+        release_dt = cutoff_dt + timedelta(days=days_ahead)
+    release_date_str = release_dt.strftime('%Y-%m-%d')
+
     return {
-        'release_date': '2026-09-28',
+        'release_date': release_date_str,
         'cutoff_date': latest_date,
         'publication_source': {
             'report_name': 'Grain Inspections for Export (WA-GR101)',
@@ -1053,6 +1199,7 @@ def build_export_inspections_data(payload):
         'totals': totals,
         'ports': dict(ports_by_grain),
         'destinations': dict(dest_by_grain),
+        'destinations_comparison': dest_comparisons,
         'curves': curves_by_grain
     }
 
@@ -1739,12 +1886,14 @@ def send_holiday_delay_notice(current_date):
 
 
 def main():
-    parser = argparse.ArgumentParser(description="USDA Export Sales Automated Pipeline")
-    parser.add_argument("--force", action="store_true", help="Force update and email dispatch even if no new date is found")
+    parser = argparse.ArgumentParser(description="USDA Export Sales & Inspections Automated Pipeline")
+    parser.add_argument("--force", action="store_true", help="Force update even if no new date is found")
+    parser.add_argument("--inspections-only", action="store_true", help="Only update Monday USDA AMS/FGIS export inspections")
+    parser.add_argument("--thursday-only", action="store_true", help="Only update Thursday USDA FAS export sales")
     args = parser.parse_args()
 
     print(f"==================================================")
-    print(f"Starting USDA Export Sales Pipeline at {datetime.now().isoformat()}")
+    print(f"Starting USDA Intelligence Pipeline at {datetime.now().isoformat()}")
     print(f"Repository Dir : {REPO_DIR}")
     print(f"Recipient      : {EMAIL_RECIPIENT}")
     print(f"GitHub Pages   : {PAGES_URL}")
@@ -1758,53 +1907,84 @@ def main():
     with open(PAYLOAD_FILE, "r", encoding="utf-8") as f:
         payload = json.load(f)
 
-    current_date = payload['soybeans'].get('latest_date', '2026-08-27')
-    print(f"[STATUS] Current payload latest release date: {current_date}")
+    # 2. Check Thursday FAS Export Sales release
+    current_thu_date = payload['soybeans'].get('latest_date', '2026-08-27') if 'soybeans' in payload else '2026-08-27'
+    print(f"[STATUS] Current Thursday FAS release date : {current_thu_date}")
+    online_thu_date = None
+    if not args.inspections_only:
+        online_thu_date = get_latest_online_date()
+    print(f"[STATUS] Latest online FAS release date    : {online_thu_date or 'Skipped/Unavailable'}")
+    is_new_thu_release = bool(online_thu_date and online_thu_date > current_thu_date)
 
-    # 2. Check online release date
-    online_date = get_latest_online_date()
-    print(f"[STATUS] Latest online USDA release date   : {online_date or 'Unavailable'}")
+    # 3. Check Monday FGIS Export Inspections release
+    current_insp_date = payload.get('inspections', {}).get('cutoff_date', '2026-09-24')
+    print(f"[STATUS] Current Monday Inspections cutoff: {current_insp_date}")
+    online_insp_date = None
+    if not args.thursday_only:
+        try:
+            insp_check_url = "https://agtransport.usda.gov/resource/sruw-w49i.json?$select=max(date)%20as%20max_date"
+            req = urllib.request.urlopen(insp_check_url, timeout=10)
+            res = json.loads(req.read().decode('utf-8'))
+            if res and res[0].get('max_date'):
+                online_insp_date = res[0]['max_date'][:10]
+        except Exception as e:
+            print(f"[WARN] Could not check latest inspections date online: {e}")
+    print(f"[STATUS] Latest online Inspections cutoff : {online_insp_date or 'Skipped/Unavailable'}")
+    is_new_insp_release = bool(online_insp_date and online_insp_date > current_insp_date)
 
-    is_new_release = bool(online_date and online_date > current_date)
-    should_run = is_new_release or args.force or os.getenv("FORCE_UPDATE", "").lower() in ("true", "1")
+    update_fas = (is_new_thu_release or (args.force and not args.inspections_only))
+    update_insp = (is_new_insp_release or (args.force and not args.thursday_only) or args.inspections_only)
 
-    if not should_run:
-        print(f"[INFO] Current data ({current_date}) is already up-to-date with USDA.")
-        print(f"Next release scheduled for Thursday at 8:30 AM US Eastern (or Friday if holiday).")
+    if not update_fas and not update_insp:
+        print(f"[INFO] Current data is already up-to-date with both USDA reports.")
+        print(f"FAS Sales (Thu): {current_thu_date} | FGIS Inspections (Mon): {current_insp_date}")
         now_utc = datetime.now(timezone.utc)
-        if now_utc.weekday() == 3: # Thursday
-            print(f"[NOTICE] It is Thursday and no new release is online. Sending holiday postponement notice...")
-            send_holiday_delay_notice(current_date)
+        if now_utc.weekday() == 3:  # Thursday
+            print(f"[NOTICE] It is Thursday and no new FAS release is online. Checking holiday postponement notice...")
+            send_holiday_delay_notice(current_thu_date)
         print(f"Exiting cleanly.")
         return
 
-    active_date = online_date if is_new_release else current_date
-    if is_new_release or args.force or os.getenv("FORCE_UPDATE", "").lower() in ("true", "1"):
-        print(f"[UPDATE] Running update pipeline for release {active_date} (is_new={is_new_release}, force={args.force})...")
-        update_grain_commodity('soybeans', 'Soybeans', active_date, payload)
-        update_grain_commodity('corn', 'Corn', active_date, payload)
-        update_grain_commodity('wheat', 'Wheat', active_date, payload)
-        update_processed_commodity('meal', 15, 'Soybean Meal', active_date, payload)
-        update_processed_commodity('oil', 16, 'Soybean Oil', active_date, payload)
-
+    # 4. Update Thursday FAS data if new or forced
+    if update_fas:
+        active_thu_date = online_thu_date if is_new_thu_release else current_thu_date
+        print(f"[UPDATE] Ingesting Thursday FAS Export Sales release {active_thu_date}...")
+        update_grain_commodity('soybeans', 'Soybeans', active_thu_date, payload)
+        update_grain_commodity('corn', 'Corn', active_thu_date, payload)
+        update_grain_commodity('wheat', 'Wheat', active_thu_date, payload)
+        update_processed_commodity('meal', 15, 'Soybean Meal', active_thu_date, payload)
+        update_processed_commodity('oil', 16, 'Soybean Oil', active_thu_date, payload)
         recalculate_pacing_tracker(payload)
-
-        # Save updated payload
-        with open(PAYLOAD_FILE, "w", encoding="utf-8") as f:
-            json.dump(payload, f)
-        print(f"[SUCCESS] Saved updated payload to {PAYLOAD_FILE}")
+        payload['summary'] = build_multi_commodity_summary(payload, active_thu_date)
     else:
-        print(f"[INFO] Skipping re-fetch for date {active_date}.")
-        recalculate_pacing_tracker(payload)
+        print(f"[INFO] Preserving existing Thursday FAS Export Sales data ({current_thu_date}).")
 
-    # 3. Rebuild index.html
-    rebuild_index_html(payload, active_date)
+    # 5. Update Monday FGIS Export Inspections data if new or forced
+    if update_insp:
+        print(f"[UPDATE] Ingesting Monday FGIS Export Inspections data (online cutoff: {online_insp_date or 'live'})...")
+        payload['inspections'] = build_export_inspections_data(payload)
+        print(f"[SUCCESS] Inspections data updated successfully (cutoff: {payload['inspections'].get('cutoff_date')}, released: {payload['inspections'].get('release_date')}).")
+    else:
+        print(f"[INFO] Preserving existing Monday FGIS Export Inspections data ({current_insp_date}).")
 
-    # 4. Dispatch Email
-    dispatch_email(payload, active_date)
+    # Save updated payload
+    with open(PAYLOAD_FILE, "w", encoding="utf-8") as f:
+        json.dump(payload, f)
+    print(f"[SUCCESS] Saved updated payload to {PAYLOAD_FILE}")
+
+    # 6. Rebuild index.html
+    active_display_date = payload['soybeans'].get('latest_date', current_thu_date) if 'soybeans' in payload else current_thu_date
+    rebuild_index_html(payload, active_display_date)
+    print(f"[SUCCESS] Rebuilt index.html with latest intelligence data.")
+
+    # 7. Dispatch Email (only if new Thursday FAS sales release occurred)
+    if update_fas:
+        dispatch_email(payload, active_display_date)
+    else:
+        print(f"[INFO] Skipping Thursday sales briefing email dispatch (Monday inspections updated).")
 
     print("==================================================")
-    print("USDA Export Sales pipeline execution completed successfully!")
+    print("USDA Intelligence pipeline execution completed successfully!")
     print("==================================================")
 
 
