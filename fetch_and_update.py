@@ -523,6 +523,13 @@ def update_processed_commodity(comm_key, cid, comm_name, new_date, payload):
 
 
 TRADE_EXPECTATIONS_DATABASE = {
+    '2026-09-24': {
+        'corn': {'low_kmt': 800.0, 'high_kmt': 1500.0, 'source': 'Reuters / Trade Survey'},
+        'soybeans': {'low_kmt': 700.0, 'high_kmt': 1400.0, 'source': 'Reuters / Trade Survey'},
+        'wheat': {'low_kmt': 250.0, 'high_kmt': 550.0, 'source': 'Reuters / Trade Survey'},
+        'meal': {'low_kmt': 50.0, 'high_kmt': 250.0, 'source': 'Reuters / Trade Survey'},
+        'oil': {'low_kmt': 0.0, 'high_kmt': 25.0, 'source': 'Reuters / Trade Survey'},
+    },
     '2026-09-17': {
         'corn': {'low_kmt': 600.0, 'high_kmt': 1200.0, 'source': 'Reuters / Trade Survey'},
         'soybeans': {'low_kmt': 400.0, 'high_kmt': 900.0, 'source': 'Reuters / Trade Survey'},
@@ -552,6 +559,25 @@ DEFAULT_COMMODITY_TRADE_RANGES = {
     'wheat': (250.0, 550.0),
     'meal': (50.0, 200.0),
     'oil': (0.0, 25.0),
+}
+
+INSPECTIONS_EXPECTATIONS_DATABASE = {
+    '2026-09-24': {
+        'corn': {'low_kmt': 1100.0, 'high_kmt': 1600.0, 'source': 'Reuters / Trade Survey'},
+        'soybeans': {'low_kmt': 600.0, 'high_kmt': 1100.0, 'source': 'Reuters / Trade Survey'},
+        'wheat': {'low_kmt': 250.0, 'high_kmt': 450.0, 'source': 'Reuters / Trade Survey'}
+    },
+    '2026-09-17': {
+        'corn': {'low_kmt': 1200.0, 'high_kmt': 1700.0, 'source': 'Reuters / Trade Survey'},
+        'soybeans': {'low_kmt': 500.0, 'high_kmt': 900.0, 'source': 'Reuters / Trade Survey'},
+        'wheat': {'low_kmt': 300.0, 'high_kmt': 500.0, 'source': 'Reuters / Trade Survey'}
+    }
+}
+
+DEFAULT_INSPECTION_RANGES = {
+    'corn': (1000.0, 1500.0),
+    'soybeans': (600.0, 1100.0),
+    'wheat': (250.0, 450.0)
 }
 
 TARGETS_PSD = {
@@ -720,6 +746,317 @@ def build_multi_commodity_summary(payload, release_date):
     }
 
 
+def get_inspection_myear_and_week(grain, dt_str):
+    """Calculates marketing year and week number for an inspection date."""
+    dt = datetime.strptime(dt_str[:10], '%Y-%m-%d')
+    year = dt.year
+    month = dt.month
+
+    if grain == 'WHEAT':
+        if month >= 6:
+            myear = f"{year}-{str(year+1)[2:]}"
+            my_start = datetime(year, 6, 1)
+        else:
+            myear = f"{year-1}-{str(year)[2:]}"
+            my_start = datetime(year-1, 6, 1)
+    else:
+        if month >= 9:
+            myear = f"{year}-{str(year+1)[2:]}"
+            my_start = datetime(year, 9, 1)
+        else:
+            myear = f"{year-1}-{str(year)[2:]}"
+            my_start = datetime(year-1, 9, 1)
+
+    days_since_start = (dt - my_start).days
+    week_num = max(1, (days_since_start // 7) + 1)
+    return myear, week_num
+
+
+def build_export_inspections_data(payload):
+    """
+    Fetches and builds the official USDA AMS / FGIS Grain Export Inspections data,
+    including weekly actual volumes vs trade expectations, multi-year seasonal curves,
+    port breakdowns, and top destination countries.
+    """
+    grain_info = {
+        'CORN': {'key': 'corn', 'name': 'Corn', 'emoji': '🌽'},
+        'SOYBEANS': {'key': 'soybeans', 'name': 'Soybeans', 'emoji': '🌿'},
+        'WHEAT': {'key': 'wheat', 'name': 'Wheat', 'emoji': '🌾'}
+    }
+    wasde_targets = {
+        'corn': 83189.0,
+        'soybeans': 49668.0,
+        'wheat': 23814.0
+    }
+
+    rows = []
+    try:
+        params = {
+            '$select': 'date,grain,sum(mt)',
+            '$where': "grain in ('CORN', 'SOYBEANS', 'WHEAT') and date >= '2019-06-01T00:00:00.000'",
+            '$group': 'date,grain',
+            '$order': 'date ASC',
+            '$limit': 3000
+        }
+        url = 'https://agtransport.usda.gov/resource/sruw-w49i.json?' + urllib.parse.urlencode(params)
+        req = urllib.request.urlopen(url, timeout=12)
+        rows = json.loads(req.read().decode('utf-8'))
+        print(f"[SUCCESS] Ingested {len(rows)} weekly FGIS inspection aggregates from AgTransport.")
+    except Exception as e:
+        print(f"[WARN] Failed to fetch live export inspections from Socrata: {e}")
+        if 'inspections' in payload:
+            return payload['inspections']
+
+    if not rows:
+        return payload.get('inspections', {})
+
+    raw_by_grain_myear = defaultdict(lambda: defaultdict(list))
+    for r in rows:
+        grain = r['grain']
+        dt_str = r['date']
+        mt = float(r.get('sum_mt') or 0)
+        myear, week_num = get_inspection_myear_and_week(grain, dt_str)
+        raw_by_grain_myear[grain][myear].append({
+            'date': dt_str[:10],
+            'week': week_num,
+            'mt': mt,
+            'kmt': round(mt / 1e3, 1),
+            'mnt': round(mt / 1e6, 3)
+        })
+
+    latest_date = max(r['date'][:10] for r in rows)
+
+    # Ports and destinations for latest week
+    ports_by_grain = defaultdict(list)
+    dest_by_grain = defaultdict(list)
+    try:
+        ports_params = {
+            '$select': 'grain,port,sum(mt)',
+            '$where': f"grain in ('CORN', 'SOYBEANS', 'WHEAT') and date = '{latest_date}T00:00:00.000'",
+            '$group': 'grain,port',
+            '$order': 'sum(mt) DESC',
+            '$limit': 50
+        }
+        ports_url = 'https://agtransport.usda.gov/resource/sruw-w49i.json?' + urllib.parse.urlencode(ports_params)
+        ports_req = urllib.request.urlopen(ports_url, timeout=10)
+        ports_rows = json.loads(ports_req.read().decode('utf-8'))
+        for pr in ports_rows:
+            g = pr['grain'].lower()
+            ports_by_grain[g].append({
+                'port': pr.get('port', 'Unknown').title(),
+                'mt': float(pr.get('sum_mt') or 0),
+                'kmt': round(float(pr.get('sum_mt') or 0) / 1e3, 1)
+            })
+
+        dest_params = {
+            '$select': 'grain,destination,sum(mt)',
+            '$where': f"grain in ('CORN', 'SOYBEANS', 'WHEAT') and date = '{latest_date}T00:00:00.000'",
+            '$group': 'grain,destination',
+            '$order': 'sum(mt) DESC',
+            '$limit': 60
+        }
+        dest_url = 'https://agtransport.usda.gov/resource/sruw-w49i.json?' + urllib.parse.urlencode(dest_params)
+        dest_req = urllib.request.urlopen(dest_url, timeout=10)
+        dest_rows = json.loads(dest_req.read().decode('utf-8'))
+        for dr in dest_rows:
+            g = dr['grain'].lower()
+            dest_by_grain[g].append({
+                'destination': dr.get('destination', 'Unknown').title(),
+                'mt': float(dr.get('sum_mt') or 0),
+                'kmt': round(float(dr.get('sum_mt') or 0) / 1e3, 1)
+            })
+    except Exception as e:
+        print(f"[WARN] Error fetching ports/destinations for inspections: {e}")
+
+    # Build curves & summary items
+    curves_by_grain = {}
+    summary_items = []
+
+    tot_weekly_actual = 0.0
+    tot_prior_week = 0.0
+    tot_same_week_ly = 0.0
+    tot_mytd_cum = 0.0
+    tot_mytd_ly = 0.0
+    tot_wasde_target = 0.0
+
+    myears_to_include = ['2021-22', '2022-23', '2023-24', '2024-25', '2025-26', '2026-27']
+
+    for grain_upper, g_info in grain_info.items():
+        g_key = g_info['key']
+        g_name = g_info['name']
+        g_emoji = g_info['emoji']
+
+        g_curves = {}
+        for my in myears_to_include:
+            wks = raw_by_grain_myear[grain_upper].get(my, [])
+            cum = 0.0
+            pt_list = []
+            for idx, w in enumerate(wks):
+                cum += w['mt']
+                pt_list.append({
+                    'week': idx + 1,
+                    'orig_week': w['week'],
+                    'date': w['date'],
+                    'weekly_mt': w['mt'],
+                    'weekly_kmt': round(w['mt'] / 1e3, 1),
+                    'cum_mt': cum,
+                    'cum_kmt': round(cum / 1e3, 1),
+                    'cum_mnt': round(cum / 1e6, 3)
+                })
+            g_curves[my] = pt_list
+
+        hist_years = ['2021-22', '2022-23', '2023-24', '2024-25', '2025-26']
+        avg_pts = []
+        max_wks = max(len(g_curves.get(y, [])) for y in hist_years)
+        for w_i in range(max_wks):
+            vals_weekly = [g_curves[y][w_i]['weekly_mt'] for y in hist_years if w_i < len(g_curves.get(y, []))]
+            vals_cum = [g_curves[y][w_i]['cum_mt'] for y in hist_years if w_i < len(g_curves.get(y, []))]
+            if vals_weekly:
+                avg_weekly = sum(vals_weekly) / len(vals_weekly)
+                avg_cum = sum(vals_cum) / len(vals_cum)
+                avg_pts.append({
+                    'week': w_i + 1,
+                    'date': f"5-Yr Avg Wk {w_i + 1}",
+                    'weekly_mt': avg_weekly,
+                    'weekly_kmt': round(avg_weekly / 1e3, 1),
+                    'cum_mt': avg_cum,
+                    'cum_kmt': round(avg_cum / 1e3, 1),
+                    'cum_mnt': round(avg_cum / 1e6, 3)
+                })
+        g_curves['5yr_avg'] = avg_pts
+        curves_by_grain[g_key] = g_curves
+
+        curr_curve = g_curves.get('2026-27', [])
+        prev_curve = g_curves.get('2025-26', [])
+        curr_wk_count = len(curr_curve)
+
+        curr_wk_pt = curr_curve[-1] if curr_curve else {}
+        prior_wk_pt = curr_curve[-2] if len(curr_curve) >= 2 else (prev_curve[-1] if prev_curve else {})
+        same_wk_ly_pt = prev_curve[curr_wk_count - 1] if len(prev_curve) >= curr_wk_count else {}
+
+        weekly_actual = curr_wk_pt.get('weekly_mt', 0.0)
+        weekly_actual_kmt = curr_wk_pt.get('weekly_kmt', 0.0)
+        prior_week_kmt = prior_wk_pt.get('weekly_kmt', 0.0)
+        same_week_ly_kmt = same_wk_ly_pt.get('weekly_kmt', 0.0)
+
+        mytd_cum = curr_wk_pt.get('cum_mt', 0.0)
+        mytd_cum_kmt = curr_wk_pt.get('cum_kmt', 0.0)
+        mytd_ly_cum = same_wk_ly_pt.get('cum_mt', 0.0)
+        mytd_ly_cum_kmt = same_wk_ly_pt.get('cum_kmt', 0.0)
+
+        yoy_pct = ((mytd_cum - mytd_ly_cum) / mytd_ly_cum * 100.0) if mytd_ly_cum > 0 else 0.0
+
+        date_est = INSPECTIONS_EXPECTATIONS_DATABASE.get(latest_date, {}).get(g_key)
+        if date_est:
+            low_kmt = date_est['low_kmt']
+            high_kmt = date_est['high_kmt']
+            source = date_est.get('source', 'Reuters / Trade Survey')
+        else:
+            default_low, default_high = DEFAULT_INSPECTION_RANGES.get(g_key, (0.0, 0.0))
+            low_kmt = default_low
+            high_kmt = default_high
+            source = 'Analyst Survey'
+
+        if weekly_actual_kmt > high_kmt:
+            signal = 'above'
+            signal_label = 'Above Range (Bullish)'
+            signal_badge_color = '#15803d'
+            signal_badge_bg = '#dcfce7'
+        elif weekly_actual_kmt < low_kmt:
+            signal = 'below'
+            signal_label = 'Below Range (Bearish)'
+            signal_badge_color = '#b91c1c'
+            signal_badge_bg = '#fee2e2'
+        else:
+            signal = 'in_line'
+            signal_label = 'Within Range (In-Line)'
+            signal_badge_color = '#1d4ed8'
+            signal_badge_bg = '#dbeafe'
+
+        target_kmt = wasde_targets.get(g_key, 0.0)
+        target_mt = target_kmt * 1e3
+        pct_target = (mytd_cum / target_mt * 100.0) if target_mt > 0 else 0.0
+
+        phase = f"MY 2026/27 (Wk {curr_wk_count})"
+
+        summary_items.append({
+            'key': g_key,
+            'name': g_name,
+            'emoji': g_emoji,
+            'marketing_year': phase,
+            'trade_range_low_kmt': low_kmt,
+            'trade_range_high_kmt': high_kmt,
+            'trade_range_label': f"{low_kmt:,.0f} – {high_kmt:,.0f}",
+            'source': source,
+            'weekly_actual_kmt': weekly_actual_kmt,
+            'signal': signal,
+            'signal_label': signal_label,
+            'signal_badge_color': signal_badge_color,
+            'signal_badge_bg': signal_badge_bg,
+            'prior_week_kmt': prior_week_kmt,
+            'same_week_last_year_kmt': same_week_ly_kmt,
+            'mytd_cumulative_kmt': mytd_cum_kmt,
+            'mytd_prior_year_kmt': mytd_ly_cum_kmt,
+            'yoy_pct': round(yoy_pct, 1),
+            'wasde_target_kmt': target_kmt,
+            'pct_target_inspected': round(pct_target, 1),
+            'raw': {
+                'weekly_actual': weekly_actual,
+                'prior_week': prior_wk_pt.get('weekly_mt', 0.0),
+                'same_week_last_year': same_wk_ly_pt.get('weekly_mt', 0.0),
+                'mytd_cumulative': mytd_cum,
+                'mytd_prior_year': mytd_ly_cum,
+                'wasde_target': target_mt
+            }
+        })
+
+        tot_weekly_actual += weekly_actual
+        tot_prior_week += prior_wk_pt.get('weekly_mt', 0.0)
+        tot_same_week_ly += same_wk_ly_pt.get('weekly_mt', 0.0)
+        tot_mytd_cum += mytd_cum
+        tot_mytd_ly += mytd_ly_cum
+        tot_wasde_target += target_mt
+
+    tot_yoy_pct = ((tot_mytd_cum - tot_mytd_ly) / tot_mytd_ly * 100.0) if tot_mytd_ly > 0 else 0.0
+    tot_pct_target = (tot_mytd_cum / tot_wasde_target * 100.0) if tot_wasde_target > 0 else 0.0
+
+    totals = {
+        'weekly_actual_kmt': round(tot_weekly_actual / 1e3, 1),
+        'prior_week_kmt': round(tot_prior_week / 1e3, 1),
+        'same_week_last_year_kmt': round(tot_same_week_ly / 1e3, 1),
+        'mytd_cumulative_kmt': round(tot_mytd_cum / 1e3, 1),
+        'mytd_prior_year_kmt': round(tot_mytd_ly / 1e3, 1),
+        'yoy_pct': round(tot_yoy_pct, 1),
+        'wasde_target_kmt': round(tot_wasde_target / 1e3, 1),
+        'pct_target_inspected': round(tot_pct_target, 1),
+        'raw': {
+            'weekly_actual': tot_weekly_actual,
+            'prior_week': tot_prior_week,
+            'same_week_last_year': tot_same_week_ly,
+            'mytd_cumulative': tot_mytd_cum,
+            'mytd_prior_year': tot_mytd_ly,
+            'wasde_target': tot_wasde_target
+        }
+    }
+
+    return {
+        'release_date': '2026-09-28',
+        'cutoff_date': latest_date,
+        'publication_source': {
+            'report_name': 'Grain Inspections for Export (WA-GR101)',
+            'agency': 'USDA Agricultural Marketing Service (AMS) / Federal Grain Inspection Service (FGIS)',
+            'schedule': 'Every Monday at 11:00 AM US Eastern (covering week ending previous Thursday)',
+            'url': 'https://www.ams.usda.gov/market-news/national-grain-reports',
+            'open_data_url': 'https://agtransport.usda.gov/'
+        },
+        'summary_table': summary_items,
+        'totals': totals,
+        'ports': dict(ports_by_grain),
+        'destinations': dict(dest_by_grain),
+        'curves': curves_by_grain
+    }
+
+
 def format_multi_commodity_summary_table_html(summary):
     """Builds the HTML multi-commodity summary table for the intelligence email."""
     if not summary or not summary.get('commodities'):
@@ -824,6 +1161,105 @@ def format_multi_commodity_summary_table_html(summary):
     """
 
 
+def format_inspections_summary_table_html(inspections):
+    """Builds the HTML table for Monday export inspections in the intelligence email."""
+    if not inspections or not inspections.get('summary_table'):
+        return ""
+
+    fmt = lambda v: f"{round(v):,}"
+
+    rows_html = ""
+    for s in inspections['summary_table']:
+        name = s['name']
+        emoji = s['emoji']
+        phase = s['marketing_year']
+        range_label = s['trade_range_label']
+        actual = s['weekly_actual_kmt']
+        sig_label = s['signal_label']
+        sig_bg = s['signal_badge_bg']
+        sig_color = s['signal_badge_color']
+        prior_wk = s['prior_week_kmt']
+        ly_wk = s['same_week_last_year_kmt']
+        mytd = s['mytd_cumulative_kmt']
+        yoy = s['yoy_pct']
+        tgt = s['wasde_target_kmt']
+        pct_tgt = s['pct_target_inspected']
+
+        badge = f'<span style="background: {sig_bg}; color: {sig_color}; padding: 2px 6px; border-radius: 4px; font-weight: bold; font-size: 10px; white-space: nowrap;">{sig_label}</span>'
+
+        rows_html += f"""
+        <tr style="border-bottom: 1px solid #e2e8f0;">
+            <td style="padding: 8px 10px; font-weight: 700; color: #1e3a8a;">{emoji} {name}</td>
+            <td style="padding: 8px 10px; color: #64748b; font-size: 11px;">{phase}</td>
+            <td style="padding: 8px 10px; text-align: center; font-family: monospace; font-weight: 700; background-color: #f1f5f9; color: #334155;">{range_label}</td>
+            <td style="padding: 8px 10px; text-align: right; font-family: monospace; font-weight: 800; color: #2563eb;">{fmt(actual)}</td>
+            <td style="padding: 8px 10px; text-align: center;">{badge}</td>
+            <td style="padding: 8px 10px; text-align: right; font-family: monospace;">{fmt(prior_wk)}</td>
+            <td style="padding: 8px 10px; text-align: right; font-family: monospace;">{fmt(ly_wk)}</td>
+            <td style="padding: 8px 10px; text-align: right; font-family: monospace; font-weight: 700; color: #0f172a;">{fmt(mytd)}</td>
+            <td style="padding: 8px 10px; text-align: right; font-family: monospace; font-weight: 700; color: {'#15803d' if yoy >= 0 else '#b91c1c'};">{'+' if yoy > 0 else ''}{yoy:.1f}%</td>
+            <td style="padding: 8px 10px; text-align: right; font-family: monospace; font-weight: 700;">{fmt(tgt)} <span style="font-size: 10px; color: #64748b;">({pct_tgt:.1f}%)</span></td>
+        </tr>
+        """
+
+    tot = inspections.get('totals', {})
+    tot_actual = tot.get('weekly_actual_kmt', 0.0)
+    tot_prior = tot.get('prior_week_kmt', 0.0)
+    tot_ly = tot.get('same_week_last_year_kmt', 0.0)
+    tot_mytd = tot.get('mytd_cumulative_kmt', 0.0)
+    tot_yoy = tot.get('yoy_pct', 0.0)
+    tot_tgt = tot.get('wasde_target_kmt', 0.0)
+    tot_pct = tot.get('pct_target_inspected', 0.0)
+
+    tfoot_html = f"""
+    <tr style="background-color: #f8fafc; font-weight: 800; border-top: 2px solid #cbd5e1;">
+        <td style="padding: 9px 10px; color: #0f172a;">🌎 TOTAL GRAINS</td>
+        <td style="padding: 9px 10px; color: #64748b; font-size: 11px;">Active Season</td>
+        <td style="padding: 9px 10px; text-align: center; color: #94a3b8;">&mdash;</td>
+        <td style="padding: 9px 10px; text-align: right; font-family: monospace; color: #2563eb;">{fmt(tot_actual)}</td>
+        <td style="padding: 9px 10px; text-align: center;"><span style="background: #e2e8f0; color: #334155; padding: 2px 6px; border-radius: 4px; font-size: 10px;">3 Grains</span></td>
+        <td style="padding: 9px 10px; text-align: right; font-family: monospace;">{fmt(tot_prior)}</td>
+        <td style="padding: 9px 10px; text-align: right; font-family: monospace;">{fmt(tot_ly)}</td>
+        <td style="padding: 9px 10px; text-align: right; font-family: monospace; color: #0f172a;">{fmt(tot_mytd)}</td>
+        <td style="padding: 9px 10px; text-align: right; font-family: monospace; color: {'#15803d' if tot_yoy >= 0 else '#b91c1c'};">{'+' if tot_yoy > 0 else ''}{tot_yoy:.1f}%</td>
+        <td style="padding: 9px 10px; text-align: right; font-family: monospace;">{fmt(tot_tgt)} <span style="font-size: 10px; color: #64748b;">({tot_pct:.1f}%)</span></td>
+    </tr>
+    """
+
+    return f"""
+    <!-- Official Grain Export Inspections (Monday USDA AMS Release) -->
+    <div style="margin-top: 20px; margin-bottom: 24px; background: #ffffff; border: 2px solid #0284c7; border-radius: 8px; overflow: hidden; box-shadow: 0 3px 6px rgba(0,0,0,0.08);">
+        <div style="background: linear-gradient(135deg, #0f172a 0%, #0369a1 100%); color: #ffffff; padding: 12px 16px; display: flex; justify-content: space-between; align-items: center;">
+            <div>
+                <span style="font-size: 10px; font-weight: 800; text-transform: uppercase; background: #0284c7; color: #ffffff; padding: 2px 8px; border-radius: 4px; margin-right: 8px;">Monday Release</span>
+                <span style="font-size: 14px; font-weight: 800;">🚢 Official Grain Export Inspections vs Market Expected Ranges</span>
+            </div>
+            <span style="font-size: 11px; color: #bae6fd;">USDA AMS / FGIS (WA-GR101) &bull; Unit: '000 MT</span>
+        </div>
+        <table style="width: 100%; border-collapse: collapse; font-size: 11px;">
+            <thead>
+                <tr style="background: #f8fafc; color: #475569; border-bottom: 2px solid #cbd5e1; font-weight: 700; text-transform: uppercase;">
+                    <th style="padding: 8px 10px; text-align: left;"># Commodity</th>
+                    <th style="padding: 8px 10px; text-align: left;">Marketing Year</th>
+                    <th style="padding: 8px 10px; text-align: center; background-color: #f1f5f9; color: #334155;">Trade Expected Range</th>
+                    <th style="padding: 8px 10px; text-align: right; color: #0284c7;">Weekly Inspected</th>
+                    <th style="padding: 8px 10px; text-align: center;">vs Trade Range</th>
+                    <th style="padding: 8px 10px; text-align: right;">Prior Wk</th>
+                    <th style="padding: 8px 10px; text-align: right;">Prior Yr</th>
+                    <th style="padding: 8px 10px; text-align: right; color: #0f172a;">MYTD Inspected</th>
+                    <th style="padding: 8px 10px; text-align: right;">YoY Pace</th>
+                    <th style="padding: 8px 10px; text-align: right;">WASDE Target (% Inspected)</th>
+                </tr>
+            </thead>
+            <tbody>
+                {rows_html}
+                {tfoot_html}
+            </tbody>
+        </table>
+    </div>
+    """
+
+
 def recalculate_pacing_tracker(payload):
     """Recalculates USDA Pacing and Weekly Run-Rates for all commodities."""
     for cKey, item in payload.items():
@@ -911,6 +1347,7 @@ def recalculate_pacing_tracker(payload):
 
     active_date = payload['soybeans'].get('latest_date', '2026-09-17') if 'soybeans' in payload else '2026-09-17'
     payload['summary'] = build_multi_commodity_summary(payload, active_date)
+    payload['inspections'] = build_export_inspections_data(payload)
 
 
 def rebuild_index_html(payload, release_date):
@@ -1137,6 +1574,9 @@ def build_email_body_html(payload, release_date):
         summary_data = build_multi_commodity_summary(payload, release_date)
     summary_table_html = format_multi_commodity_summary_table_html(summary_data)
 
+    inspections_data = payload.get('inspections')
+    inspections_table_html = format_inspections_summary_table_html(inspections_data) if inspections_data else ""
+
     pacing_scorecards = build_pacing_scorecards_html(payload)
     tables_html = "".join(format_table_html(title, emoji, myear, payload[k]['table_8rows']) for k, title, emoji, myear in comm_configs)
 
@@ -1178,6 +1618,8 @@ def build_email_body_html(payload, release_date):
         </div>
 
         {summary_table_html}
+
+        {inspections_table_html}
 
         {pacing_scorecards}
 

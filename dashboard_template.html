@@ -250,6 +250,287 @@
     </div>
 
     <!-- ===================================================================== -->
+    <!-- 0.5 EXPORT INSPECTIONS TAB VIEW CONTAINER (Monday USDA AMS Release)   -->
+    <!-- ===================================================================== -->
+    <div id="inspections-view-container" class="space-y-5" style="display: none;">
+
+      <!-- Official Release & Intelligence Education Banner -->
+      <div class="stat-card rounded-xl p-5 shadow-xs border-l-4 border-l-blue-600 bg-gradient-to-r from-blue-50/60 to-white dark:from-slate-900 dark:to-slate-900/60">
+        <div class="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+          <div class="space-y-1.5">
+            <div class="flex flex-wrap items-center gap-2">
+              <span class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-extrabold bg-blue-100 text-blue-800 dark:bg-blue-900/60 dark:text-blue-300">
+                🚢 USDA AMS &bull; Official Federal Grain Inspections
+              </span>
+              <span class="text-xs font-semibold px-2 py-0.5 rounded bg-emerald-100 text-emerald-800 dark:bg-emerald-900/40 dark:text-emerald-300" id="insp-release-badge">
+                Week Ending Sep 24, 2026 (Released Mon Sep 28)
+              </span>
+            </div>
+            <h2 class="text-base sm:text-lg font-black text-slate-900 dark:text-white tracking-tight">
+              US Grain Export Inspections & Physical Vessel Flow Analysis
+            </h2>
+            <p class="text-xs text-slate-600 dark:text-slate-300 leading-relaxed max-w-4xl">
+              <strong>Publication Schedule & Source:</strong> Export inspections are officially certified under the U.S. Grain Standards Act by the <strong>USDA Agricultural Marketing Service (AMS) & Federal Grain Inspection Service (FGIS)</strong> and published <strong>every Monday at 11:00 AM US Eastern</strong> via report <strong>WA-GR101</strong> (and the open data platform <a href="https://agtransport.usda.gov" target="_blank" class="text-blue-600 hover:underline font-semibold">agtransport.usda.gov</a>), measuring physical metric tons inspected as ships and railcars load at U.S. export ports.
+            </p>
+          </div>
+
+          <div class="flex sm:flex-col items-center sm:items-end justify-between shrink-0 gap-2">
+            <a href="https://www.ams.usda.gov/market-news/national-grain-reports" target="_blank" class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 text-slate-700 dark:text-slate-200 hover:bg-slate-50 shadow-xs transition-all">
+              <span>📄 Official USDA WA-GR101</span>
+              <svg class="w-3.5 h-3.5 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/></svg>
+            </a>
+            <span class="text-[11px] text-slate-400 font-medium">Physical Realization vs Contract Sales</span>
+          </div>
+        </div>
+
+        <!-- Educational Comparison Card -->
+        <div class="mt-3.5 pt-3 border-t border-slate-200 dark:border-slate-800 grid grid-cols-1 md:grid-cols-2 gap-3 text-xs">
+          <div class="p-2.5 rounded-lg bg-blue-50/50 dark:bg-slate-800/40 border border-blue-100 dark:border-slate-800">
+            <span class="font-bold text-blue-900 dark:text-blue-300">🚢 Monday Inspections (What You See Here):</span>
+            <p class="text-[11px] text-slate-600 dark:text-slate-400 mt-0.5">
+              Measures <strong>actual physical grain weighed & loaded</strong> into ocean vessel holds or cross-border railcars during the week. This is hard, physical confirmation that commodities are physically leaving the United States.
+            </p>
+          </div>
+          <div class="p-2.5 rounded-lg bg-slate-50 dark:bg-slate-800/40 border border-slate-200 dark:border-slate-800">
+            <span class="font-bold text-slate-900 dark:text-slate-300">📋 Thursday Export Sales (FAS ESRQS):</span>
+            <p class="text-[11px] text-slate-600 dark:text-slate-400 mt-0.5">
+              Measures <strong>commercial forward sales contracts signed</strong> between exporters and overseas buyers. Includes future delivery commitments and remains subject to cancellations, rollovers, or destination changes.
+            </p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Inspections Executive KPI Cards -->
+      <div class="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4">
+        <div class="stat-card rounded-xl p-4 shadow-xs">
+          <div class="text-xs font-medium text-[var(--muted-foreground,#64748b)] uppercase tracking-wider">Weekly Inspected (Total)</div>
+          <div class="text-2xl font-extrabold text-blue-600 dark:text-blue-400 mt-1" id="insp-kpi-tot">--</div>
+          <div class="text-[11px] text-[var(--muted-foreground,#64748b)] mt-1 truncate" id="insp-kpi-tot-desc">All Grains Inspected for Export</div>
+        </div>
+
+        <div class="stat-card rounded-xl p-4 shadow-xs">
+          <div class="text-xs font-medium text-[var(--muted-foreground,#64748b)] uppercase tracking-wider">Corn Inspected</div>
+          <div class="text-2xl font-extrabold text-amber-600 dark:text-amber-400 mt-1" id="insp-kpi-corn">--</div>
+          <div class="text-[11px] text-[var(--muted-foreground,#64748b)] mt-1 truncate" id="insp-kpi-corn-desc">MYTD: -- (+14.4% YoY)</div>
+        </div>
+
+        <div class="stat-card rounded-xl p-4 shadow-xs">
+          <div class="text-xs font-medium text-[var(--muted-foreground,#64748b)] uppercase tracking-wider">Soybean Inspected</div>
+          <div class="text-2xl font-extrabold text-emerald-600 dark:text-emerald-400 mt-1" id="insp-kpi-soy">--</div>
+          <div class="text-[11px] text-[var(--muted-foreground,#64748b)] mt-1 truncate" id="insp-kpi-soy-desc">MYTD: -- (+24.4% YoY)</div>
+        </div>
+
+        <div class="stat-card rounded-xl p-4 shadow-xs">
+          <div class="text-xs font-medium text-[var(--muted-foreground,#64748b)] uppercase tracking-wider">Wheat Inspected</div>
+          <div class="text-2xl font-extrabold text-purple-600 dark:text-purple-400 mt-1" id="insp-kpi-wheat">--</div>
+          <div class="text-[11px] text-[var(--muted-foreground,#64748b)] mt-1 truncate" id="insp-kpi-wheat-desc">MYTD: -- (27.1% WASDE Target)</div>
+        </div>
+      </div>
+
+      <!-- Weekly Inspections Table vs Pre-Report Trade Expectations -->
+      <div class="stat-card rounded-xl p-5 shadow-xs space-y-4">
+        <div class="flex flex-col md:flex-row md:items-center justify-between gap-3 pb-3 border-b border-[var(--border,#e2e8f0)]">
+          <div>
+            <div class="flex items-center gap-2">
+              <h2 class="text-base md:text-lg font-bold text-[var(--foreground,#0f172a)]">
+                📊 Weekly Export Inspections vs Pre-Report Market Expectations
+              </h2>
+              <span class="px-2 py-0.5 rounded text-[11px] font-bold bg-blue-100 text-blue-800 dark:bg-blue-900/50 dark:text-blue-300">
+                Monday Release
+              </span>
+            </div>
+            <p class="text-xs text-[var(--muted-foreground,#64748b)] mt-0.5">
+              Comparison of actual weekly official FGIS inspections against surveyed analyst expected ranges ahead of release
+            </p>
+          </div>
+
+          <div class="flex items-center gap-2">
+            <span class="text-xs font-semibold px-2.5 py-1 rounded bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300" id="insp-table-unit-badge">
+              Unit: 1,000 MT
+            </span>
+          </div>
+        </div>
+
+        <!-- Table -->
+        <div class="overflow-x-auto border border-[var(--border,#e2e8f0)] rounded-lg">
+          <table class="w-full text-left text-xs whitespace-nowrap">
+            <thead class="bg-slate-50 dark:bg-slate-900 border-b border-[var(--border,#cbd5e1)] text-[11px] font-bold text-slate-700 dark:text-slate-300">
+              <tr>
+                <th class="py-3 px-3.5">Commodity & Marketing Year</th>
+                <th class="py-3 px-3 text-right">Trade Survey Expected Range</th>
+                <th class="py-3 px-3 text-right">Weekly Inspected (Actual)</th>
+                <th class="py-3 px-3 text-center">Market Signal</th>
+                <th class="py-3 px-3 text-right">Prior Week (Rev.)</th>
+                <th class="py-3 px-3 text-right">Same Week Last Year</th>
+                <th class="py-3 px-3 text-right">Cumulative (MYTD)</th>
+                <th class="py-3 px-3 text-right">Prior Year Same Period</th>
+                <th class="py-3 px-3 text-right">YoY Change</th>
+                <th class="py-3 px-3 text-right">USDA Full-Year Target</th>
+                <th class="py-3 px-3 text-center">% Target Inspected</th>
+                <th class="py-3 px-3 text-center">Chart Action</th>
+              </tr>
+            </thead>
+            <tbody class="divide-y divide-[var(--border,#e2e8f0)]" id="insp-table-tbody">
+              <!-- Populated dynamically via renderInspectionsView() -->
+            </tbody>
+            <tfoot class="bg-slate-50 dark:bg-slate-900 border-t-2 border-slate-300 dark:border-slate-700 font-bold" id="insp-table-tfoot">
+              <!-- Populated dynamically with totals -->
+            </tfoot>
+          </table>
+        </div>
+      </div>
+
+      <!-- SECTION: MULTI-YEAR SEASONAL PROGRESSION & COMPARISON (User requested!) -->
+      <div class="stat-card rounded-xl p-5 shadow-xs space-y-4" id="inspections-progression-section">
+        <div class="flex flex-col lg:flex-row lg:items-center justify-between pb-3 border-b border-[var(--border,#e2e8f0)] gap-3">
+          <div>
+            <div class="flex items-center gap-2">
+              <h2 class="text-base md:text-lg font-bold text-[var(--foreground,#0f172a)]" id="insp-chart-title">
+                Multi-Year Seasonal Export Inspections Progression
+              </h2>
+              <span class="px-2 py-0.5 rounded text-[11px] font-bold bg-emerald-100 text-emerald-800 dark:bg-emerald-900/50 dark:text-emerald-300" id="insp-chart-grain-badge">
+                🌽 Corn
+              </span>
+            </div>
+            <p class="text-xs text-[var(--muted-foreground,#64748b)] mt-0.5">
+              Select and compare marketing years side-by-side to track export shipping velocity and cumulative pacing against USDA WASDE projections
+            </p>
+          </div>
+
+          <!-- Commodity & Metric Switchers -->
+          <div class="flex flex-wrap items-center gap-2">
+            <!-- Commodity Switcher Pills -->
+            <div class="inline-flex rounded-lg border border-[var(--border,#cbd5e1)] p-0.5 bg-[var(--secondary,#f1f5f9)] text-xs font-semibold">
+              <button id="insp-btn-corn" onclick="switchInspectionsCommodity('corn')" class="px-3 py-1 rounded-md bg-white text-slate-900 shadow-xs font-bold transition-all">🌽 Corn</button>
+              <button id="insp-btn-soybeans" onclick="switchInspectionsCommodity('soybeans')" class="px-3 py-1 rounded-md text-slate-600 hover:text-slate-900 font-medium transition-all">🌿 Soybeans</button>
+              <button id="insp-btn-wheat" onclick="switchInspectionsCommodity('wheat')" class="px-3 py-1 rounded-md text-slate-600 hover:text-slate-900 font-medium transition-all">🌾 Wheat</button>
+            </div>
+
+            <!-- Metric Mode: Cumulative vs Weekly -->
+            <div class="inline-flex rounded-lg border border-[var(--border,#cbd5e1)] p-0.5 bg-[var(--secondary,#f1f5f9)] text-xs font-semibold">
+              <button id="insp-btn-metric-cum" onclick="setInspectionsMetric('cum')" class="px-3 py-1 rounded-md bg-white text-slate-900 shadow-xs font-bold transition-all">📈 Cumulative (Pacing)</button>
+              <button id="insp-btn-metric-weekly" onclick="setInspectionsMetric('weekly')" class="px-3 py-1 rounded-md text-slate-600 hover:text-slate-900 font-medium transition-all">📊 Weekly Volume</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Year Selectors Bar (The key user request!) -->
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 p-3 rounded-lg bg-slate-50 dark:bg-slate-800/40 border border-slate-200 dark:border-slate-700">
+          <div class="flex flex-wrap items-center gap-1.5" id="insp-year-pills-container">
+            <!-- Dynamic Year Pills: 2026-27, 2025-26, 2024-25, 2023-24, 2022-23, 2021-22, 5-Yr Avg -->
+          </div>
+
+          <div class="flex items-center gap-2 shrink-0">
+            <button onclick="setInspectionsYearPreset('all')" class="px-2.5 py-1 text-xs font-bold rounded bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 text-slate-700 hover:bg-slate-100 transition-all">
+              All Years
+            </button>
+            <button onclick="setInspectionsYearPreset('5yr')" class="px-2.5 py-1 text-xs font-bold rounded bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 text-slate-700 hover:bg-slate-100 transition-all">
+              5-Yr Comparison
+            </button>
+            <button id="insp-btn-toggle-target" onclick="toggleInspectionsTargetLine()" class="flex items-center gap-1.5 px-2.5 py-1 rounded text-xs font-bold border border-amber-400 bg-amber-100 text-amber-900 shadow-xs transition-all">
+              <span>🎯 USDA Target Pacing</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- Canvas Chart Area (Extended vertical length 600px) -->
+        <div class="relative w-full h-[540px] md:h-[620px]">
+          <canvas id="inspectionsChart" class="w-full h-full block"></canvas>
+          <div id="insp-canvas-tooltip" class="absolute hidden pointer-events-none z-30 bg-slate-900/95 text-white p-3 rounded-lg shadow-xl border border-slate-700 text-xs backdrop-blur-xs min-w-[220px]"></div>
+        </div>
+
+        <!-- Multi-Year Progression Log Table -->
+        <div class="mt-4 pt-4 border-t border-[var(--border,#e2e8f0)] space-y-2">
+          <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+            <div>
+              <h3 class="text-sm font-bold text-slate-900 dark:text-white" id="insp-prog-table-title">
+                Weekly Inspections Progression Comparison Matrix
+              </h3>
+              <p class="text-[11px] text-slate-500">
+                Week-by-week values across marketing years for selected commodity
+              </p>
+            </div>
+          </div>
+
+          <div class="overflow-x-auto max-h-96 custom-scrollbar border border-[var(--border,#e2e8f0)] rounded-lg">
+            <table class="w-full text-left text-xs whitespace-nowrap">
+              <thead class="bg-slate-50 dark:bg-slate-900 border-b border-[var(--border,#cbd5e1)] text-[11px] font-bold sticky top-0 z-10 text-slate-700 dark:text-slate-300" id="insp-prog-table-thead">
+                <!-- Dynamic Header -->
+              </thead>
+              <tbody class="divide-y divide-[var(--border,#e2e8f0)]" id="insp-prog-table-tbody">
+                <!-- Dynamic Rows -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- SECTION: PORT & DESTINATION LOGISTICS FLOW BREAKDOWN -->
+      <div class="grid grid-cols-1 lg:grid-cols-2 gap-5">
+        <!-- Ports Breakdown -->
+        <div class="stat-card rounded-xl p-5 shadow-xs space-y-3">
+          <div class="pb-2 border-b border-[var(--border,#e2e8f0)] flex items-center justify-between">
+            <div>
+              <h3 class="text-sm font-bold text-slate-900 dark:text-white">
+                ⚓ Weekly Inspections by Port Area
+              </h3>
+              <p class="text-[11px] text-slate-500">
+                Mississippi Gulf vs Pacific Northwest (PNW) vs Interior loading volumes
+              </p>
+            </div>
+            <span class="text-[11px] font-semibold px-2 py-0.5 rounded bg-slate-100 text-slate-700" id="insp-ports-grain-label">Corn</span>
+          </div>
+
+          <div class="overflow-x-auto border border-[var(--border,#e2e8f0)] rounded-lg">
+            <table class="w-full text-left text-xs whitespace-nowrap">
+              <thead class="bg-slate-50 dark:bg-slate-900 border-b border-[var(--border,#cbd5e1)] text-[11px] font-bold text-slate-700 dark:text-slate-300">
+                <tr>
+                  <th class="py-2.5 px-3">Port Region</th>
+                  <th class="py-2.5 px-3 text-right">Volume</th>
+                  <th class="py-2.5 px-3 text-right">Share (%)</th>
+                </tr>
+              </thead>
+              <tbody class="divide-y divide-[var(--border,#e2e8f0)]" id="insp-ports-tbody">
+                <!-- Dynamic Port Rows -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- Destinations Breakdown -->
+        <div class="stat-card rounded-xl p-5 shadow-xs space-y-3">
+          <div class="pb-2 border-b border-[var(--border,#e2e8f0)] flex items-center justify-between">
+            <div>
+              <h3 class="text-sm font-bold text-slate-900 dark:text-white">
+                🌍 Top Export Destinations (Inspections Certified)
+              </h3>
+              <p class="text-[11px] text-slate-500">
+                Primary overseas buyers receiving physical shipments this week
+              </p>
+            </div>
+            <span class="text-[11px] font-semibold px-2 py-0.5 rounded bg-slate-100 text-slate-700" id="insp-dests-grain-label">Corn</span>
+          </div>
+
+          <div class="overflow-x-auto border border-[var(--border,#e2e8f0)] rounded-lg">
+            <table class="w-full text-left text-xs whitespace-nowrap">
+              <thead class="bg-slate-50 dark:bg-slate-900 border-b border-[var(--border,#cbd5e1)] text-[11px] font-bold text-slate-700 dark:text-slate-300">
+                <tr>
+                  <th class="py-2.5 px-3">Destination Country</th>
+                  <th class="py-2.5 px-3 text-right">Volume</th>
+                  <th class="py-2.5 px-3 text-right">Share (%)</th>
+                </tr>
+              </thead>
+              <tbody class="divide-y divide-[var(--border,#e2e8f0)]" id="insp-dests-tbody">
+                <!-- Dynamic Destination Rows -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- ===================================================================== -->
     <!-- SINGLE COMMODITY VIEW CONTAINER (Corn, Soybeans, Wheat, Meal, Oil)    -->
     <!-- ===================================================================== -->
     <div id="commodity-view-container" class="space-y-5" style="display: none;">
@@ -568,25 +849,40 @@
     function init() {
       renderCommodityTabs();
       setupCanvasEvents();
+      setupInspectionsCanvasEvents();
       window.addEventListener('resize', () => {
-        if (currentCommodity !== 'summary') drawChart();
+        if (currentCommodity === 'inspections') {
+          drawInspectionsChart();
+        } else if (currentCommodity !== 'summary') {
+          drawChart();
+        }
       });
 
+      const sumCont = document.getElementById('summary-view-container');
+      const commCont = document.getElementById('commodity-view-container');
+      const inspCont = document.getElementById('inspections-view-container');
+      const destWrapper = document.getElementById('dest-dropdown-wrapper');
+
       if (currentCommodity === 'summary') {
-        const sumCont = document.getElementById('summary-view-container');
-        const commCont = document.getElementById('commodity-view-container');
-        const destWrapper = document.getElementById('dest-dropdown-wrapper');
         if (sumCont) sumCont.style.display = 'block';
         if (commCont) commCont.style.display = 'none';
+        if (inspCont) inspCont.style.display = 'none';
         if (destWrapper) destWrapper.style.display = 'none';
         const pageTitle = document.getElementById('page-title');
         if (pageTitle) pageTitle.textContent = 'Consolidated US Agricultural Export Sales Intelligence';
         renderSummaryView();
+      } else if (currentCommodity === 'inspections') {
+        if (sumCont) sumCont.style.display = 'none';
+        if (commCont) commCont.style.display = 'none';
+        if (inspCont) inspCont.style.display = 'block';
+        if (destWrapper) destWrapper.style.display = 'none';
+        const pageTitle = document.getElementById('page-title');
+        if (pageTitle) pageTitle.textContent = 'US Grain Export Inspections Intelligence (USDA AMS / FGIS Monday Report)';
+        renderInspectionsView();
       } else {
-        const sumCont = document.getElementById('summary-view-container');
-        const commCont = document.getElementById('commodity-view-container');
         if (sumCont) sumCont.style.display = 'none';
         if (commCont) commCont.style.display = 'block';
+        if (inspCont) inspCont.style.display = 'none';
         applyPreset('all');
         renderLegend();
         renderPacingTracker();
@@ -600,19 +896,31 @@
 
       const sumCont = document.getElementById('summary-view-container');
       const commCont = document.getElementById('commodity-view-container');
+      const inspCont = document.getElementById('inspections-view-container');
       const destWrapper = document.getElementById('dest-dropdown-wrapper');
 
       if (cKey === 'summary') {
         if (sumCont) sumCont.style.display = 'block';
         if (commCont) commCont.style.display = 'none';
+        if (inspCont) inspCont.style.display = 'none';
         if (destWrapper) destWrapper.style.display = 'none';
         const pageTitle = document.getElementById('page-title');
         if (pageTitle) pageTitle.textContent = 'Consolidated US Agricultural Export Sales Intelligence';
         renderSummaryView();
         window.scrollTo({ top: 0, behavior: 'smooth' });
+      } else if (cKey === 'inspections') {
+        if (sumCont) sumCont.style.display = 'none';
+        if (commCont) commCont.style.display = 'none';
+        if (inspCont) inspCont.style.display = 'block';
+        if (destWrapper) destWrapper.style.display = 'none';
+        const pageTitle = document.getElementById('page-title');
+        if (pageTitle) pageTitle.textContent = 'US Grain Export Inspections Intelligence (USDA AMS / FGIS Monday Report)';
+        renderInspectionsView();
+        window.scrollTo({ top: 0, behavior: 'smooth' });
       } else {
         if (sumCont) sumCont.style.display = 'none';
         if (commCont) commCont.style.display = 'block';
+        if (inspCont) inspCont.style.display = 'none';
         if (destWrapper) destWrapper.style.display = 'block';
         applyPreset(currentDestScope === 'custom' ? 'all' : currentDestScope);
         renderPacingTracker();
@@ -628,6 +936,7 @@
 
       const tabDefs = [
         { key: 'summary', label: '📊 Summary' },
+        { key: 'inspections', label: '🚢 Export Inspections' },
         { key: 'corn', label: '🌽 Corn' },
         { key: 'soybeans', label: '🌿 Soybeans' },
         { key: 'wheat', label: '🌾 Wheat' },
@@ -636,7 +945,7 @@
       ];
 
       tabDefs.forEach(t => {
-        if (t.key !== 'summary' && !COMMODITIES[t.key]) return;
+        if (t.key !== 'summary' && t.key !== 'inspections' && !COMMODITIES[t.key]) return;
 
         const btn = document.createElement('button');
         btn.className = `commodity-tab px-3.5 py-1.5 rounded-lg border text-xs font-semibold transition-all ${
@@ -649,7 +958,7 @@
 
       const destWrapper = document.getElementById('dest-dropdown-wrapper');
       if (destWrapper) {
-        destWrapper.style.display = (currentCommodity === 'summary') ? 'none' : 'block';
+        destWrapper.style.display = (currentCommodity === 'summary' || currentCommodity === 'inspections') ? 'none' : 'block';
       }
 
       const pkg = COMMODITIES[currentCommodity];
@@ -827,6 +1136,8 @@
       syncUnitButtons();
       if (currentCommodity === 'summary') {
         renderSummaryView();
+      } else if (currentCommodity === 'inspections') {
+        renderInspectionsView();
       } else {
         updateView();
         renderPacingTracker();
@@ -845,6 +1156,8 @@
       if (badge) badge.textContent = `Unit: ${isKmt ? '1,000 MT' : 'mn t'}`;
       const sumBadge = document.getElementById('sum-table-unit-badge');
       if (sumBadge) sumBadge.textContent = `Unit: ${isKmt ? '1,000 MT' : 'mn t'}`;
+      const inspBadge = document.getElementById('insp-table-unit-badge');
+      if (inspBadge) inspBadge.textContent = `Unit: ${isKmt ? '1,000 MT' : 'mn t'}`;
     }
 
     function setChartCategory(cat) {
@@ -1938,6 +2251,865 @@
             </button>
           `;
           pacingCards.appendChild(card);
+        });
+      }
+    }
+
+    // =========================================================================
+    // EXPORT INSPECTIONS JAVASCRIPT ENGINE (USDA AMS / FGIS Monday Report)
+    // =========================================================================
+    let currentInspectionsCommodity = 'corn'; // 'corn', 'soybeans', 'wheat'
+    let currentInspectionsMetric = 'cum'; // 'cum' (Cumulative Pacing) or 'weekly' (Weekly Volume)
+    let showInspectionsTarget = true;
+    let inspectionsHoveredWeek = null;
+
+    const INSPECTIONS_YEARS = ['2021-22', '2022-23', '2023-24', '2024-25', '2025-26', '2026-27', '5yr_avg'];
+    const INSPECTIONS_YEAR_CONFIG = {
+      '2021-22': { label: '2021/22', color: '#94a3b8', width: 1.5, visible: true },
+      '2022-23': { label: '2022/23', color: '#64748b', width: 1.5, visible: true },
+      '2023-24': { label: '2023/24', color: '#0ea5e9', width: 1.8, visible: true },
+      '2024-25': { label: '2024/25', color: '#8b5cf6', width: 2.0, visible: true },
+      '2025-26': { label: '2025/26', color: '#2563eb', width: 3.0, visible: true },
+      '2026-27': { label: '2026/27 (Current)', color: '#10b981', width: 3.5, visible: true },
+      '5yr_avg': { label: '5-Yr Average', color: '#f59e0b', width: 2.2, dashed: true, visible: true }
+    };
+
+    const INSPECTIONS_COMMODITY_META = {
+      corn: { name: 'Corn', emoji: '🌽', target_kmt: 83189.0, start_month: 'Sep' },
+      soybeans: { name: 'Soybeans', emoji: '🌿', target_kmt: 49668.0, start_month: 'Sep' },
+      wheat: { name: 'Wheat', emoji: '🌾', target_kmt: 23814.0, start_month: 'Jun' }
+    };
+
+    function switchInspectionsCommodity(cKey) {
+      if (!INSPECTIONS_COMMODITY_META[cKey]) return;
+      currentInspectionsCommodity = cKey;
+      renderInspectionsView();
+      const progSec = document.getElementById('inspections-progression-section');
+      if (progSec) {
+        progSec.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+      }
+    }
+
+    function setInspectionsMetric(metric) {
+      currentInspectionsMetric = metric;
+      const btnCum = document.getElementById('insp-btn-metric-cum');
+      const btnWk = document.getElementById('insp-btn-metric-weekly');
+      if (btnCum && btnWk) {
+        if (metric === 'cum') {
+          btnCum.className = 'px-3 py-1 rounded-md bg-white text-slate-900 shadow-xs font-bold transition-all';
+          btnWk.className = 'px-3 py-1 rounded-md text-slate-600 hover:text-slate-900 font-medium transition-all';
+        } else {
+          btnWk.className = 'px-3 py-1 rounded-md bg-white text-slate-900 shadow-xs font-bold transition-all';
+          btnCum.className = 'px-3 py-1 rounded-md text-slate-600 hover:text-slate-900 font-medium transition-all';
+        }
+      }
+      drawInspectionsChart();
+      renderInspectionsProgressionTable();
+    }
+
+    function toggleInspectionsYear(yr) {
+      if (!INSPECTIONS_YEAR_CONFIG[yr]) return;
+      INSPECTIONS_YEAR_CONFIG[yr].visible = !INSPECTIONS_YEAR_CONFIG[yr].visible;
+      renderInspectionsYearPills();
+      drawInspectionsChart();
+      renderInspectionsProgressionTable();
+    }
+
+    function setInspectionsYearPreset(preset) {
+      if (preset === 'all') {
+        INSPECTIONS_YEARS.forEach(y => INSPECTIONS_YEAR_CONFIG[y].visible = true);
+      } else if (preset === '5yr') {
+        INSPECTIONS_YEARS.forEach(y => {
+          INSPECTIONS_YEAR_CONFIG[y].visible = ['2022-23', '2023-24', '2024-25', '2025-26', '2026-27', '5yr_avg'].includes(y);
+        });
+      }
+      renderInspectionsYearPills();
+      drawInspectionsChart();
+      renderInspectionsProgressionTable();
+    }
+
+    function toggleInspectionsTargetLine() {
+      showInspectionsTarget = !showInspectionsTarget;
+      const btn = document.getElementById('insp-btn-toggle-target');
+      if (btn) {
+        if (showInspectionsTarget) {
+          btn.className = 'flex items-center gap-1.5 px-2.5 py-1 rounded text-xs font-bold border border-amber-400 bg-amber-100 text-amber-900 shadow-xs transition-all';
+        } else {
+          btn.className = 'flex items-center gap-1.5 px-2.5 py-1 rounded text-xs font-semibold border border-dashed border-slate-300 opacity-50 text-slate-600 transition-all';
+        }
+      }
+      drawInspectionsChart();
+    }
+
+    function renderInspectionsYearPills() {
+      const container = document.getElementById('insp-year-pills-container');
+      if (!container) return;
+      container.innerHTML = '';
+
+      INSPECTIONS_YEARS.forEach(y => {
+        const cfg = INSPECTIONS_YEAR_CONFIG[y];
+        const btn = document.createElement('button');
+        const isActive = cfg.visible;
+        btn.className = `flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-semibold border transition-all ${
+          isActive 
+            ? 'border-[var(--border,#cbd5e1)] bg-white dark:bg-slate-700 text-slate-800 dark:text-slate-100 shadow-2xs' 
+            : 'border-dashed border-slate-300 dark:border-slate-700 opacity-40 text-slate-500'
+        }`;
+        btn.onclick = () => toggleInspectionsYear(y);
+        btn.innerHTML = `
+          <span class="w-3 h-1.5 rounded-full" style="background-color: ${cfg.color}"></span>
+          <span>${cfg.label}</span>
+        `;
+        container.appendChild(btn);
+      });
+    }
+
+    function renderInspectionsView() {
+      const insp = COMMODITIES.inspections;
+      if (!insp) return;
+
+      const isKmt = currentUnit === 'kmt';
+      const mult = isKmt ? 1.0 : 0.001;
+      const unitLabel = isKmt ? '1,000 MT' : 'mn t';
+
+      // 1. Release Badge
+      const relBadge = document.getElementById('insp-release-badge');
+      if (relBadge && insp.cutoff_date && insp.release_date) {
+        relBadge.textContent = `Week Ending ${insp.cutoff_date} (Released Mon ${insp.release_date})`;
+      }
+
+      // 2. Executive KPI Cards
+      const totKpi = document.getElementById('insp-kpi-tot');
+      const totDesc = document.getElementById('insp-kpi-tot-desc');
+      if (totKpi && insp.totals) {
+        totKpi.textContent = `${fmtVal(insp.totals.weekly_actual_kmt * mult, isKmt)} ${unitLabel}`;
+        totDesc.textContent = `MYTD: ${fmtVal(insp.totals.mytd_cumulative_kmt * mult, isKmt)} (${insp.totals.yoy_pct >= 0 ? '+' : ''}${insp.totals.yoy_pct}% YoY)`;
+      }
+
+      const cornRow = insp.summary_table.find(r => r.key === 'corn');
+      if (cornRow) {
+        const cornKpi = document.getElementById('insp-kpi-corn');
+        const cornDesc = document.getElementById('insp-kpi-corn-desc');
+        if (cornKpi) cornKpi.textContent = `${fmtVal(cornRow.weekly_actual_kmt * mult, isKmt)} ${unitLabel}`;
+        if (cornDesc) cornDesc.textContent = `MYTD: ${fmtVal(cornRow.mytd_cumulative_kmt * mult, isKmt)} (${cornRow.yoy_pct >= 0 ? '+' : ''}${cornRow.yoy_pct}% YoY)`;
+      }
+
+      const soyRow = insp.summary_table.find(r => r.key === 'soybeans');
+      if (soyRow) {
+        const soyKpi = document.getElementById('insp-kpi-soy');
+        const soyDesc = document.getElementById('insp-kpi-soy-desc');
+        if (soyKpi) soyKpi.textContent = `${fmtVal(soyRow.weekly_actual_kmt * mult, isKmt)} ${unitLabel}`;
+        if (soyDesc) soyDesc.textContent = `MYTD: ${fmtVal(soyRow.mytd_cumulative_kmt * mult, isKmt)} (${soyRow.yoy_pct >= 0 ? '+' : ''}${soyRow.yoy_pct}% YoY)`;
+      }
+
+      const wheatRow = insp.summary_table.find(r => r.key === 'wheat');
+      if (wheatRow) {
+        const wheatKpi = document.getElementById('insp-kpi-wheat');
+        const wheatDesc = document.getElementById('insp-kpi-wheat-desc');
+        if (wheatKpi) wheatKpi.textContent = `${fmtVal(wheatRow.weekly_actual_kmt * mult, isKmt)} ${unitLabel}`;
+        if (wheatDesc) wheatDesc.textContent = `MYTD: ${fmtVal(wheatRow.mytd_cumulative_kmt * mult, isKmt)} (${wheatRow.pct_target_inspected.toFixed(1)}% WASDE Target)`;
+      }
+
+      // 3. Inspections Summary Table
+      const tbody = document.getElementById('insp-table-tbody');
+      if (tbody) {
+        tbody.innerHTML = '';
+        insp.summary_table.forEach(r => {
+          const act = r.weekly_actual_kmt * mult;
+          const pw = r.prior_week_kmt * mult;
+          const ly = r.same_week_last_year_kmt * mult;
+          const mytd = r.mytd_cumulative_kmt * mult;
+          const mytdLy = r.mytd_prior_year_kmt * mult;
+          const target = r.wasde_target_kmt * mult;
+          const pct = r.pct_target_inspected;
+
+          let rangeStr = '';
+          if (isKmt) {
+            rangeStr = `${r.trade_range_low_kmt.toLocaleString()} – ${r.trade_range_high_kmt.toLocaleString()}`;
+          } else {
+            rangeStr = `${(r.trade_range_low_kmt / 1000).toFixed(2)} – ${(r.trade_range_high_kmt / 1000).toFixed(2)}`;
+          }
+
+          let badgeBg = 'bg-blue-100 text-blue-800 dark:bg-blue-900/40 dark:text-blue-300';
+          let signalIcon = '●';
+          let signalText = 'Within Range';
+          if (r.signal === 'above') {
+            badgeBg = 'bg-emerald-100 text-emerald-800 dark:bg-emerald-900/40 dark:text-emerald-300';
+            signalIcon = '▲';
+            signalText = 'Above Range (Bullish)';
+          } else if (r.signal === 'below') {
+            badgeBg = 'bg-rose-100 text-rose-800 dark:bg-rose-900/40 dark:text-rose-300';
+            signalIcon = '▼';
+            signalText = 'Below Range (Bearish)';
+          }
+
+          const tr = document.createElement('tr');
+          tr.className = 'hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors cursor-pointer';
+          tr.onclick = (e) => {
+            if (e.target.tagName !== 'BUTTON') {
+              switchInspectionsCommodity(r.key);
+            }
+          };
+
+          tr.innerHTML = `
+            <td class="py-3 px-3.5">
+              <div class="flex items-center gap-2">
+                <span class="text-base">${r.emoji}</span>
+                <div>
+                  <div class="font-bold text-slate-800 dark:text-slate-100 text-xs">${r.name}</div>
+                  <div class="text-[10px] text-slate-500 font-mono">${r.marketing_year}</div>
+                </div>
+              </div>
+            </td>
+            <td class="py-3 px-3 text-right font-mono text-slate-600 dark:text-slate-400 font-semibold" title="Source: ${r.source}">
+              ${rangeStr}
+            </td>
+            <td class="py-3 px-3 text-right font-mono font-extrabold text-blue-700 dark:text-blue-400">
+              ${fmtVal(act, isKmt)}
+            </td>
+            <td class="py-3 px-3 text-center">
+              <span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold ${badgeBg}">
+                <span>${signalIcon}</span>
+                <span>${signalText}</span>
+              </span>
+            </td>
+            <td class="py-3 px-3 text-right font-mono text-slate-600 dark:text-slate-400">
+              ${fmtVal(pw, isKmt)}
+            </td>
+            <td class="py-3 px-3 text-right font-mono text-slate-600 dark:text-slate-400">
+              ${fmtVal(ly, isKmt)}
+            </td>
+            <td class="py-3 px-3 text-right font-mono font-bold text-slate-900 dark:text-white">
+              ${fmtVal(mytd, isKmt)}
+            </td>
+            <td class="py-3 px-3 text-right font-mono text-slate-600 dark:text-slate-400">
+              ${fmtVal(mytdLy, isKmt)}
+            </td>
+            <td class="py-3 px-3 text-right font-mono font-bold ${r.yoy_pct >= 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-600 dark:text-rose-400'}">
+              ${r.yoy_pct >= 0 ? '+' : ''}${r.yoy_pct.toFixed(1)}%
+            </td>
+            <td class="py-3 px-3 text-right font-mono text-slate-700 dark:text-slate-300">
+              ${fmtVal(target, isKmt)}
+            </td>
+            <td class="py-3 px-3 text-center">
+              <div class="flex items-center justify-center gap-1.5">
+                <div class="w-12 bg-slate-200 dark:bg-slate-700 rounded-full h-1.5 overflow-hidden">
+                  <div class="h-1.5 rounded-full ${pct >= 25 ? 'bg-emerald-500' : pct >= 10 ? 'bg-blue-600' : 'bg-amber-500'}" style="width: ${Math.min(pct * 2, 100)}%"></div>
+                </div>
+                <span class="font-mono font-bold text-xs text-slate-800 dark:text-slate-200">${pct.toFixed(1)}%</span>
+              </div>
+            </td>
+            <td class="py-3 px-3 text-center">
+              <button onclick="switchInspectionsCommodity('${r.key}')" class="px-2.5 py-1 text-[11px] font-bold rounded-md bg-blue-50 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300 hover:bg-blue-100 transition-all border border-blue-200 dark:border-blue-800">
+                Compare Progression →
+              </button>
+            </td>
+          `;
+          tbody.appendChild(tr);
+        });
+      }
+
+      // 4. Grand Totals Footer
+      const tfoot = document.getElementById('insp-table-tfoot');
+      if (tfoot && insp.totals) {
+        const totAct = insp.totals.weekly_actual_kmt * mult;
+        const totPw = insp.totals.prior_week_kmt * mult;
+        const totLy = insp.totals.same_week_last_year_kmt * mult;
+        const totMytd = insp.totals.mytd_cumulative_kmt * mult;
+        const totMytdLy = insp.totals.mytd_prior_year_kmt * mult;
+        const totTarget = insp.totals.wasde_target_kmt * mult;
+        const totPct = insp.totals.pct_target_inspected;
+
+        tfoot.innerHTML = `
+          <tr class="text-xs">
+            <td class="py-3 px-3.5 text-slate-900 dark:text-white">
+              <div class="font-extrabold flex items-center gap-1.5">
+                <span>🌎</span>
+                <span>TOTAL GRAINS INSPECTED</span>
+              </div>
+            </td>
+            <td class="py-3 px-3 text-right text-slate-400 font-mono text-[11px]">—</td>
+            <td class="py-3 px-3 text-right font-mono font-extrabold text-blue-700 dark:text-blue-400">
+              ${fmtVal(totAct, isKmt)}
+            </td>
+            <td class="py-3 px-3 text-center">
+              <span class="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-bold bg-slate-200 text-slate-800 dark:bg-slate-700 dark:text-slate-200">
+                3 Grains
+              </span>
+            </td>
+            <td class="py-3 px-3 text-right font-mono text-slate-700 dark:text-slate-300">
+              ${fmtVal(totPw, isKmt)}
+            </td>
+            <td class="py-3 px-3 text-right font-mono text-slate-700 dark:text-slate-300">
+              ${fmtVal(totLy, isKmt)}
+            </td>
+            <td class="py-3 px-3 text-right font-mono font-extrabold text-slate-900 dark:text-white">
+              ${fmtVal(totMytd, isKmt)}
+            </td>
+            <td class="py-3 px-3 text-right font-mono text-slate-700 dark:text-slate-300">
+              ${fmtVal(totMytdLy, isKmt)}
+            </td>
+            <td class="py-3 px-3 text-right font-mono font-extrabold ${insp.totals.yoy_pct >= 0 ? 'text-emerald-700 dark:text-emerald-400' : 'text-rose-700 dark:text-rose-400'}">
+              ${insp.totals.yoy_pct >= 0 ? '+' : ''}${insp.totals.yoy_pct.toFixed(1)}%
+            </td>
+            <td class="py-3 px-3 text-right font-mono font-bold text-slate-800 dark:text-slate-200">
+              ${fmtVal(totTarget, isKmt)}
+            </td>
+            <td class="py-3 px-3 text-center font-mono font-extrabold text-blue-700 dark:text-blue-400">
+              ${totPct.toFixed(1)}%
+            </td>
+            <td class="py-3 px-3 text-center text-slate-400">—</td>
+          </tr>
+        `;
+      }
+
+      // 5. Progression Section Controls
+      const meta = INSPECTIONS_COMMODITY_META[currentInspectionsCommodity];
+      const grainTitle = document.getElementById('insp-chart-title');
+      const grainBadge = document.getElementById('insp-chart-grain-badge');
+      if (grainTitle) grainTitle.textContent = `Multi-Year Seasonal Export Inspections Progression: ${meta.name}`;
+      if (grainBadge) grainBadge.textContent = `${meta.emoji} ${meta.name}`;
+
+      ['corn', 'soybeans', 'wheat'].forEach(k => {
+        const btn = document.getElementById('insp-btn-' + k);
+        if (btn) {
+          if (k === currentInspectionsCommodity) {
+            btn.className = 'px-3 py-1 rounded-md bg-white text-slate-900 shadow-xs font-bold transition-all';
+          } else {
+            btn.className = 'px-3 py-1 rounded-md text-slate-600 hover:text-slate-900 font-medium transition-all';
+          }
+        }
+      });
+
+      renderInspectionsYearPills();
+      drawInspectionsChart();
+      renderInspectionsProgressionTable();
+      renderInspectionsLogistics();
+    }
+
+    function drawInspectionsChart() {
+      const canvas = document.getElementById('inspectionsChart');
+      if (!canvas) return;
+      const ctx = canvas.getContext('2d');
+      const dpr = window.devicePixelRatio || 1;
+
+      const rect = canvas.getBoundingClientRect();
+      if (rect.width === 0 || rect.height === 0) return;
+      canvas.width = rect.width * dpr;
+      canvas.height = rect.height * dpr;
+      ctx.scale(dpr, dpr);
+
+      const W = rect.width;
+      const H = rect.height;
+      const padding = { top: 38, right: 40, bottom: 62, left: 78 };
+      const plotW = W - padding.left - padding.right;
+      const plotH = H - padding.top - padding.bottom;
+
+      ctx.clearRect(0, 0, W, H);
+
+      const insp = COMMODITIES.inspections;
+      if (!insp || !insp.curves || !insp.curves[currentInspectionsCommodity]) return;
+
+      const curves = insp.curves[currentInspectionsCommodity];
+      const meta = INSPECTIONS_COMMODITY_META[currentInspectionsCommodity];
+      const isKmt = currentUnit === 'kmt';
+      const mult = isKmt ? 1.0 : 0.001;
+      const isCum = currentInspectionsMetric === 'cum';
+
+      // Find max value
+      let maxVal = 0;
+      INSPECTIONS_YEARS.forEach(y => {
+        if (!INSPECTIONS_YEAR_CONFIG[y].visible) return;
+        const pts = curves[y] || [];
+        pts.forEach(p => {
+          const v = isCum ? (p.cum_kmt * mult) : (p.weekly_kmt * mult);
+          if (v > maxVal) maxVal = v;
+        });
+      });
+
+      // Factor in target if cumulative and target line is toggled on
+      if (isCum && showInspectionsTarget && meta.target_kmt) {
+        const tgtVal = meta.target_kmt * mult;
+        if (tgtVal > maxVal) maxVal = tgtVal;
+      }
+
+      if (maxVal === 0) maxVal = 10;
+
+      const niceScale = getNiceScale(maxVal, 5);
+      const yMax = niceScale.max;
+
+      // Y-Axis Grid Lines & Numbers
+      ctx.fillStyle = '#64748b';
+      ctx.font = '11px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
+      ctx.textAlign = 'right';
+
+      niceScale.ticks.forEach(tickVal => {
+        const yPos = padding.top + plotH - (tickVal / yMax) * plotH;
+        
+        ctx.beginPath();
+        ctx.moveTo(padding.left, yPos);
+        ctx.lineTo(W - padding.right, yPos);
+        if (tickVal === 0) {
+          ctx.strokeStyle = '#94a3b8';
+          ctx.lineWidth = 1.5;
+          ctx.setLineDash([]);
+        } else {
+          ctx.strokeStyle = '#e2e8f0';
+          ctx.lineWidth = 1;
+          ctx.setLineDash([4, 4]);
+        }
+        ctx.stroke();
+
+        let labelStr = '';
+        if (isKmt) {
+          labelStr = Math.round(tickVal).toLocaleString();
+        } else {
+          labelStr = (tickVal % 1 === 0) ? tickVal.toFixed(0) : tickVal.toFixed(1);
+        }
+        ctx.fillText(labelStr, padding.left - 10, yPos + 3.5);
+      });
+      ctx.setLineDash([]);
+
+      // Baseline rule
+      const baseline = padding.top + plotH;
+      ctx.strokeStyle = '#94a3b8';
+      ctx.lineWidth = 1.5;
+      ctx.beginPath();
+      ctx.moveTo(padding.left, baseline);
+      ctx.lineTo(W - padding.right, baseline);
+      ctx.stroke();
+
+      // X-Axis Weeks & Month Boundaries (52 Weeks total)
+      const totalWeeks = 52;
+      const isWheat = currentInspectionsCommodity === 'wheat';
+      const months = isWheat
+        ? ['Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec', 'Jan', 'Feb', 'Mar', 'Apr', 'May']
+        : ['Sep', 'Oct', 'Nov', 'Dec', 'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug'];
+
+      const monthStartWeeks = [1, 5, 9, 14, 18, 22, 27, 31, 35, 40, 44, 48];
+      const isNarrow = plotW < 600;
+
+      monthStartWeeks.forEach((wIdx, i) => {
+        const xPos = padding.left + ((wIdx - 1) / (totalWeeks - 1)) * plotW;
+        const shouldShowLabel = !isNarrow || (i % 2 === 0);
+
+        ctx.beginPath();
+        ctx.moveTo(xPos, padding.top);
+        ctx.lineTo(xPos, baseline);
+        ctx.strokeStyle = '#f1f5f9';
+        ctx.lineWidth = 1;
+        ctx.setLineDash([2, 4]);
+        ctx.stroke();
+        ctx.setLineDash([]);
+
+        ctx.beginPath();
+        ctx.moveTo(xPos, baseline);
+        ctx.lineTo(xPos, baseline + 5);
+        ctx.strokeStyle = '#94a3b8';
+        ctx.lineWidth = 1;
+        ctx.stroke();
+
+        if (shouldShowLabel) {
+          ctx.textAlign = 'center';
+          ctx.fillStyle = '#64748b';
+          ctx.font = '11px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
+          ctx.fillText(months[i], xPos, baseline + 18);
+          ctx.font = '9px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
+          ctx.fillStyle = '#94a3b8';
+          ctx.fillText(`W${wIdx}`, xPos, baseline + 30);
+        }
+      });
+
+      // Draw Target Benchmark Line (Cumulative mode)
+      if (isCum && showInspectionsTarget && meta.target_kmt) {
+        const tgtVal = meta.target_kmt * mult;
+        const yTgt = padding.top + plotH - (tgtVal / yMax) * plotH;
+
+        ctx.beginPath();
+        ctx.moveTo(padding.left, yTgt);
+        ctx.lineTo(W - padding.right, yTgt);
+        ctx.strokeStyle = '#f59e0b';
+        ctx.lineWidth = 1.8;
+        ctx.setLineDash([6, 4]);
+        ctx.stroke();
+        ctx.setLineDash([]);
+
+        ctx.fillStyle = '#f59e0b';
+        ctx.font = 'bold 10px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
+        ctx.textAlign = 'right';
+        ctx.fillText(`🎯 WASDE Target: ${fmtVal(tgtVal, isKmt)} ${isKmt ? 'k MT' : 'mn t'}`, W - padding.right, yTgt - 6);
+
+        // Linear target pacing projection trajectory
+        const x1 = padding.left;
+        const y1 = baseline;
+        const x2 = padding.left + plotW;
+        const y2 = yTgt;
+        ctx.beginPath();
+        ctx.moveTo(x1, y1);
+        ctx.lineTo(x2, y2);
+        ctx.strokeStyle = 'rgba(245, 158, 11, 0.35)';
+        ctx.lineWidth = 1.5;
+        ctx.setLineDash([3, 5]);
+        ctx.stroke();
+        ctx.setLineDash([]);
+      }
+
+      // Draw Multi-Year Inspection Curves
+      INSPECTIONS_YEARS.forEach(y => {
+        const cfg = INSPECTIONS_YEAR_CONFIG[y];
+        if (!cfg.visible) return;
+
+        const pts = (curves[y] || []).slice().sort((a, b) => a.week - b.week);
+        if (pts.length === 0) return;
+
+        ctx.beginPath();
+        ctx.strokeStyle = cfg.color;
+        ctx.lineWidth = cfg.width;
+        if (cfg.dashed) {
+          ctx.setLineDash([5, 4]);
+        } else {
+          ctx.setLineDash([]);
+        }
+
+        let first = true;
+        pts.forEach(p => {
+          if (p.week < 1 || p.week > totalWeeks) return;
+          const x = padding.left + ((p.week - 1) / (totalWeeks - 1)) * plotW;
+          const val = isCum ? (p.cum_kmt * mult) : (p.weekly_kmt * mult);
+          const yPos = padding.top + plotH - (val / yMax) * plotH;
+
+          if (first) {
+            ctx.moveTo(x, yPos);
+            first = false;
+          } else {
+            ctx.lineTo(x, yPos);
+          }
+        });
+        ctx.stroke();
+        ctx.setLineDash([]);
+
+        // For current year (2026-27), draw distinct circular markers
+        if (y === '2026-27') {
+          pts.forEach(p => {
+            if (p.week < 1 || p.week > totalWeeks) return;
+            const x = padding.left + ((p.week - 1) / (totalWeeks - 1)) * plotW;
+            const val = isCum ? (p.cum_kmt * mult) : (p.weekly_kmt * mult);
+            const yPos = padding.top + plotH - (val / yMax) * plotH;
+
+            ctx.beginPath();
+            ctx.arc(x, yPos, 4, 0, Math.PI * 2);
+            ctx.fillStyle = '#ffffff';
+            ctx.fill();
+            ctx.strokeStyle = '#10b981';
+            ctx.lineWidth = 2.5;
+            ctx.stroke();
+          });
+        }
+      });
+
+      // Crosshair for Hovered Week
+      if (inspectionsHoveredWeek && inspectionsHoveredWeek >= 1 && inspectionsHoveredWeek <= totalWeeks) {
+        const xCross = padding.left + ((inspectionsHoveredWeek - 1) / (totalWeeks - 1)) * plotW;
+        ctx.beginPath();
+        ctx.moveTo(xCross, padding.top);
+        ctx.lineTo(xCross, baseline);
+        ctx.strokeStyle = '#3b82f6';
+        ctx.lineWidth = 1.5;
+        ctx.setLineDash([4, 3]);
+        ctx.stroke();
+        ctx.setLineDash([]);
+      }
+    }
+
+    function setupInspectionsCanvasEvents() {
+      const canvas = document.getElementById('inspectionsChart');
+      const tooltip = document.getElementById('insp-canvas-tooltip');
+      if (!canvas || !tooltip) return;
+
+      canvas.addEventListener('mousemove', (e) => {
+        const rect = canvas.getBoundingClientRect();
+        const mouseX = e.clientX - rect.left;
+        const mouseY = e.clientY - rect.top;
+
+        const padding = { top: 38, right: 40, bottom: 62, left: 78 };
+        const plotW = rect.width - padding.left - padding.right;
+
+        if (mouseX < padding.left - 10 || mouseX > rect.width - padding.right + 10) {
+          hideInspectionsTooltip();
+          return;
+        }
+
+        const ratio = (mouseX - padding.left) / plotW;
+        const weekNum = Math.max(1, Math.min(52, Math.round(ratio * 51) + 1));
+        inspectionsHoveredWeek = weekNum;
+        drawInspectionsChart();
+
+        const insp = COMMODITIES.inspections;
+        if (!insp || !insp.curves || !insp.curves[currentInspectionsCommodity]) return;
+
+        const curves = insp.curves[currentInspectionsCommodity];
+        const isKmt = currentUnit === 'kmt';
+        const mult = isKmt ? 1.0 : 0.001;
+        const unitStr = isKmt ? 'k MT' : 'mn t';
+        const isCum = currentInspectionsMetric === 'cum';
+
+        let dateLabel = '';
+        const curPts = curves['2026-27'] || [];
+        const curPoint = curPts.find(p => p.week === weekNum);
+        if (curPoint && curPoint.date) {
+          dateLabel = ` (${curPoint.date})`;
+        }
+
+        let rows = `
+          <div class="font-bold border-b border-slate-700 pb-1 mb-1.5 flex justify-between items-center text-xs">
+            <span>MY Week ${weekNum}${dateLabel}</span>
+            <span class="text-[10px] px-1.5 py-0.5 rounded bg-blue-950/60 text-blue-300 border border-blue-800">
+              ${isCum ? '📈 Cumulative Inspected' : '📊 Weekly Volume'}
+            </span>
+          </div>
+        `;
+
+        let hasData = false;
+        let curVal = null;
+        let lyVal = null;
+
+        INSPECTIONS_YEARS.forEach(y => {
+          if (!INSPECTIONS_YEAR_CONFIG[y].visible) return;
+          const pts = curves[y] || [];
+          const pt = pts.find(p => p.week === weekNum);
+          if (pt) {
+            hasData = true;
+            const val = isCum ? (pt.cum_kmt * mult) : (pt.weekly_kmt * mult);
+            if (y === '2026-27') curVal = val;
+            if (y === '2025-26') lyVal = val;
+
+            const isCurrent = y === '2026-27';
+            const isLy = y === '2025-26';
+            const isAvg = y === '5yr_avg';
+
+            rows += `
+              <div class="flex items-center justify-between gap-3 text-[11px] py-0.5">
+                <span class="flex items-center gap-1.5">
+                  <span class="w-2.5 h-1.5 rounded-full" style="background-color: ${INSPECTIONS_YEAR_CONFIG[y].color}"></span>
+                  <span class="${isCurrent ? 'font-bold text-white' : 'text-slate-300'}">${INSPECTIONS_YEAR_CONFIG[y].label}:</span>
+                </span>
+                <span class="font-mono font-bold ${isCurrent ? 'text-emerald-400' : isLy ? 'text-blue-400' : isAvg ? 'text-amber-400' : 'text-slate-300'}">
+                  ${fmtVal(val, isKmt)} ${unitStr}
+                </span>
+              </div>
+            `;
+          }
+        });
+
+        if (curVal !== null && lyVal !== null && lyVal > 0) {
+          const diff = curVal - lyVal;
+          const diffPct = (diff / lyVal) * 100;
+          rows += `
+            <div class="flex items-center justify-between gap-3 text-[11px] mt-1 pt-1 border-t border-slate-800">
+              <span class="text-slate-400">YoY Pace:</span>
+              <span class="font-mono font-bold ${diff >= 0 ? 'text-emerald-400' : 'text-rose-400'}">
+                ${diff >= 0 ? '+' : ''}${fmtVal(diff, isKmt)} ${unitStr} (${diffPct >= 0 ? '+' : ''}${diffPct.toFixed(1)}%)
+              </span>
+            </div>
+          `;
+        }
+
+        if (!hasData) {
+          hideInspectionsTooltip();
+          return;
+        }
+
+        tooltip.innerHTML = rows;
+        tooltip.classList.remove('hidden');
+
+        const tooltipW = tooltip.offsetWidth;
+        let left = mouseX + 15;
+        if (left + tooltipW > rect.width) left = mouseX - tooltipW - 15;
+        tooltip.style.left = `${left}px`;
+        tooltip.style.top = `${Math.max(10, mouseY - 40)}px`;
+      });
+
+      canvas.addEventListener('mouseleave', () => {
+        hideInspectionsTooltip();
+      });
+    }
+
+    function hideInspectionsTooltip() {
+      inspectionsHoveredWeek = null;
+      const tooltip = document.getElementById('insp-canvas-tooltip');
+      if (tooltip) tooltip.classList.add('hidden');
+      drawInspectionsChart();
+    }
+
+    function renderInspectionsProgressionTable() {
+      const thead = document.getElementById('insp-prog-table-thead');
+      const tbody = document.getElementById('insp-prog-table-tbody');
+      if (!thead || !tbody) return;
+
+      const insp = COMMODITIES.inspections;
+      if (!insp || !insp.curves || !insp.curves[currentInspectionsCommodity]) return;
+
+      const curves = insp.curves[currentInspectionsCommodity];
+      const isKmt = currentUnit === 'kmt';
+      const mult = isKmt ? 1.0 : 0.001;
+      const isCum = currentInspectionsMetric === 'cum';
+
+      let headRow = `
+        <tr>
+          <th class="py-2.5 px-3">MY Week</th>
+          <th class="py-2.5 px-3">Date (2026/27)</th>
+      `;
+
+      INSPECTIONS_YEARS.forEach(y => {
+        if (INSPECTIONS_YEAR_CONFIG[y].visible) {
+          headRow += `<th class="py-2.5 px-3 text-right" style="color: ${INSPECTIONS_YEAR_CONFIG[y].color}">${INSPECTIONS_YEAR_CONFIG[y].label}</th>`;
+        }
+      });
+
+      headRow += `
+          <th class="py-2.5 px-3 text-right">YoY Diff</th>
+          <th class="py-2.5 px-3 text-right">YoY %</th>
+        </tr>
+      `;
+      thead.innerHTML = headRow;
+
+      // Determine max week available in curves
+      const curPts = curves['2026-27'] || [];
+      const curMaxWeek = curPts.length > 0 ? Math.max(...curPts.map(p => p.week)) : 4;
+
+      tbody.innerHTML = '';
+      for (let w = 1; w <= 52; w++) {
+        const pCur = (curves['2026-27'] || []).find(p => p.week === w);
+        const pLy = (curves['2025-26'] || []).find(p => p.week === w);
+
+        const curVal = pCur ? (isCum ? pCur.cum_kmt * mult : pCur.weekly_kmt * mult) : null;
+        const lyVal = pLy ? (isCum ? pLy.cum_kmt * mult : pLy.weekly_kmt * mult) : null;
+        const dateStr = (pCur && pCur.date) ? pCur.date : '—';
+        const isCurrentActiveWeek = (w === curMaxWeek);
+
+        let rowHtml = `
+          <tr class="transition-colors ${
+            isCurrentActiveWeek 
+              ? 'bg-emerald-50/70 dark:bg-emerald-950/30 border-l-4 border-l-emerald-500 font-semibold' 
+              : 'hover:bg-slate-50 dark:hover:bg-slate-800/40'
+          }">
+            <td class="py-2 px-3 font-bold text-slate-800 dark:text-slate-200">
+              Week ${w} ${isCurrentActiveWeek ? '<span class="text-[10px] text-emerald-600 dark:text-emerald-400 font-bold ml-1">● Current</span>' : ''}
+            </td>
+            <td class="py-2 px-3 text-slate-500 font-mono text-[11px]">${dateStr}</td>
+        `;
+
+        let hasAnyData = false;
+        INSPECTIONS_YEARS.forEach(y => {
+          if (INSPECTIONS_YEAR_CONFIG[y].visible) {
+            const pt = (curves[y] || []).find(p => p.week === w);
+            if (pt) {
+              hasAnyData = true;
+              const v = isCum ? (pt.cum_kmt * mult) : (pt.weekly_kmt * mult);
+              const isCurrent = y === '2026-27';
+              rowHtml += `
+                <td class="py-2 px-3 text-right font-mono ${isCurrent ? 'font-extrabold text-emerald-600 dark:text-emerald-400' : 'text-slate-700 dark:text-slate-300'}">
+                  ${fmtVal(v, isKmt)}
+                </td>
+              `;
+            } else {
+              rowHtml += `<td class="py-2 px-3 text-right text-slate-300 dark:text-slate-700 font-mono">-</td>`;
+            }
+          }
+        });
+
+        if (curVal !== null && lyVal !== null && lyVal > 0) {
+          const diff = curVal - lyVal;
+          const diffPct = (diff / lyVal) * 100;
+          rowHtml += `
+            <td class="py-2 px-3 text-right font-mono font-bold ${diff >= 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-600 dark:text-rose-400'}">
+              ${diff >= 0 ? '+' : ''}${fmtVal(diff, isKmt)}
+            </td>
+            <td class="py-2 px-3 text-right font-mono font-bold ${diffPct >= 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-600 dark:text-rose-400'}">
+              ${diffPct >= 0 ? '+' : ''}${diffPct.toFixed(1)}%
+            </td>
+          `;
+        } else {
+          rowHtml += `
+            <td class="py-2 px-3 text-right text-slate-400 font-mono">—</td>
+            <td class="py-2 px-3 text-right text-slate-400 font-mono">—</td>
+          `;
+        }
+
+        rowHtml += `</tr>`;
+        if (hasAnyData) {
+          tbody.innerHTML += rowHtml;
+        }
+      }
+    }
+
+    function renderInspectionsLogistics() {
+      const insp = COMMODITIES.inspections;
+      if (!insp) return;
+
+      const isKmt = currentUnit === 'kmt';
+      const mult = isKmt ? 1.0 : 0.001;
+      const unitLabel = isKmt ? 'k MT' : 'mn t';
+      const meta = INSPECTIONS_COMMODITY_META[currentInspectionsCommodity];
+
+      const portsLabel = document.getElementById('insp-ports-grain-label');
+      const destsLabel = document.getElementById('insp-dests-grain-label');
+      if (portsLabel) portsLabel.textContent = `${meta.emoji} ${meta.name}`;
+      if (destsLabel) destsLabel.textContent = `${meta.emoji} ${meta.name}`;
+
+      // 1. Ports
+      const portsTbody = document.getElementById('insp-ports-tbody');
+      if (portsTbody) {
+        portsTbody.innerHTML = '';
+        const portList = (insp.ports && insp.ports[currentInspectionsCommodity]) || [];
+        const totPortMt = portList.reduce((acc, p) => acc + (p.mt || 0), 0);
+
+        portList.forEach(p => {
+          const val = (p.kmt || 0) * mult;
+          const pct = totPortMt > 0 ? ((p.mt / totPortMt) * 100) : 0;
+          const tr = document.createElement('tr');
+          tr.className = 'hover:bg-slate-50 dark:hover:bg-slate-800/40 transition-colors';
+          tr.innerHTML = `
+            <td class="py-2 px-3 font-semibold text-slate-800 dark:text-slate-200">${p.port}</td>
+            <td class="py-2 px-3 text-right font-mono font-bold text-blue-700 dark:text-blue-400">${fmtVal(val, isKmt)} ${unitLabel}</td>
+            <td class="py-2 px-3 text-right">
+              <div class="flex items-center justify-end gap-2">
+                <div class="w-14 bg-slate-200 dark:bg-slate-700 rounded-full h-1.5 overflow-hidden">
+                  <div class="h-1.5 rounded-full bg-blue-600" style="width: ${Math.min(pct, 100)}%"></div>
+                </div>
+                <span class="font-mono text-xs font-semibold text-slate-700 dark:text-slate-300 w-10 text-right">${pct.toFixed(1)}%</span>
+              </div>
+            </td>
+          `;
+          portsTbody.appendChild(tr);
+        });
+      }
+
+      // 2. Destinations
+      const destsTbody = document.getElementById('insp-dests-tbody');
+      if (destsTbody) {
+        destsTbody.innerHTML = '';
+        const destList = (insp.destinations && insp.destinations[currentInspectionsCommodity]) || [];
+        const totDestMt = destList.reduce((acc, d) => acc + (d.mt || 0), 0);
+
+        destList.forEach(d => {
+          const val = (d.kmt || 0) * mult;
+          const pct = totDestMt > 0 ? ((d.mt / totDestMt) * 100) : 0;
+          const tr = document.createElement('tr');
+          tr.className = 'hover:bg-slate-50 dark:hover:bg-slate-800/40 transition-colors';
+          tr.innerHTML = `
+            <td class="py-2 px-3 font-semibold text-slate-800 dark:text-slate-200">${d.destination}</td>
+            <td class="py-2 px-3 text-right font-mono font-bold text-emerald-700 dark:text-emerald-400">${fmtVal(val, isKmt)} ${unitLabel}</td>
+            <td class="py-2 px-3 text-right">
+              <div class="flex items-center justify-end gap-2">
+                <div class="w-14 bg-slate-200 dark:bg-slate-700 rounded-full h-1.5 overflow-hidden">
+                  <div class="h-1.5 rounded-full bg-emerald-600" style="width: ${Math.min(pct, 100)}%"></div>
+                </div>
+                <span class="font-mono text-xs font-semibold text-slate-700 dark:text-slate-300 w-10 text-right">${pct.toFixed(1)}%</span>
+              </div>
+            </td>
+          `;
+          destsTbody.appendChild(tr);
         });
       }
     }
