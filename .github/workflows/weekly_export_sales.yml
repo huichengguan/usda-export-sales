@@ -17,6 +17,10 @@ on:
     - cron: '15 14 * * 5'
     - cron: '00 15 * * 5'
     - cron: '00 16 * * 5'
+    # Monday Export Inspections Schedule: Released 11:00 AM EDT = 15:00 UTC / 23:00 SGT
+    - cron: '15 15 * * 1'
+    - cron: '45 15 * * 1'
+    - cron: '15 16 * * 1'
   workflow_dispatch: # Allows manual run anytime with a single click
 
 permissions:

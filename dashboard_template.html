@@ -169,6 +169,25 @@
         </div>
       </div>
 
+      <!-- Cross-Report Navigator Banner (Thursday Sales vs Monday Inspections) -->
+      <div class="stat-card rounded-xl p-3.5 shadow-xs border-l-4 border-l-blue-600 bg-gradient-to-r from-blue-50/70 to-white dark:from-slate-800/80 dark:to-slate-900/60 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs">
+        <div class="flex items-center gap-3">
+          <span class="text-2xl shrink-0">🚢</span>
+          <div>
+            <div class="font-bold text-slate-800 dark:text-slate-100 flex flex-wrap items-center gap-2">
+              <span>Looking for Monday's Export Inspections?</span>
+              <span class="px-2 py-0.5 rounded text-[10px] font-extrabold bg-blue-100 text-blue-800 dark:bg-blue-900/60 dark:text-blue-300">USDA AMS / FGIS Monday 11:00 AM ET</span>
+            </div>
+            <p class="text-[11px] text-slate-600 dark:text-slate-400 mt-0.5">
+              This <strong>Sales Summary</strong> tab displays the <strong>Thursday USDA FAS Export Sales</strong> report (commercial forward contracts). For certified physical vessel loadings and port inspections, switch to the Monday report tab.
+            </p>
+          </div>
+        </div>
+        <button onclick="switchCommodity('inspections')" class="px-3.5 py-1.5 rounded-lg bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs shadow-xs transition-all shrink-0 flex items-center gap-1.5 self-start sm:self-center">
+          <span>Open Export Inspections (Monday) →</span>
+        </button>
+      </div>
+
       <!-- Multi-Commodity Summary Intelligence Table -->
       <div class="stat-card rounded-xl p-5 shadow-xs space-y-4">
         <div class="flex flex-col md:flex-row md:items-center justify-between gap-3 pb-3 border-b border-[var(--border,#e2e8f0)]">
@@ -892,7 +911,6 @@
     function switchCommodity(cKey) {
       if (cKey === currentCommodity) return;
       currentCommodity = cKey;
-      renderCommodityTabs();
 
       const sumCont = document.getElementById('summary-view-container');
       const commCont = document.getElementById('commodity-view-container');
@@ -906,7 +924,8 @@
         if (destWrapper) destWrapper.style.display = 'none';
         const pageTitle = document.getElementById('page-title');
         if (pageTitle) pageTitle.textContent = 'Consolidated US Agricultural Export Sales Intelligence';
-        renderSummaryView();
+        renderCommodityTabs();
+        try { renderSummaryView(); } catch (err) { console.error('Error in renderSummaryView:', err); }
         window.scrollTo({ top: 0, behavior: 'smooth' });
       } else if (cKey === 'inspections') {
         if (sumCont) sumCont.style.display = 'none';
@@ -915,13 +934,15 @@
         if (destWrapper) destWrapper.style.display = 'none';
         const pageTitle = document.getElementById('page-title');
         if (pageTitle) pageTitle.textContent = 'US Grain Export Inspections Intelligence (USDA AMS / FGIS Monday Report)';
-        renderInspectionsView();
+        renderCommodityTabs();
+        try { renderInspectionsView(); } catch (err) { console.error('Error in renderInspectionsView:', err); }
         window.scrollTo({ top: 0, behavior: 'smooth' });
       } else {
         if (sumCont) sumCont.style.display = 'none';
         if (commCont) commCont.style.display = 'block';
         if (inspCont) inspCont.style.display = 'none';
         if (destWrapper) destWrapper.style.display = 'block';
+        renderCommodityTabs();
         applyPreset(currentDestScope === 'custom' ? 'all' : currentDestScope);
         renderPacingTracker();
         renderLegend();
@@ -935,8 +956,8 @@
       container.innerHTML = '';
 
       const tabDefs = [
-        { key: 'summary', label: '📊 Summary' },
-        { key: 'inspections', label: '🚢 Export Inspections' },
+        { key: 'summary', label: '📊 Sales Summary (Thu)' },
+        { key: 'inspections', label: '🚢 Export Inspections (Mon)' },
         { key: 'corn', label: '🌽 Corn' },
         { key: 'soybeans', label: '🌿 Soybeans' },
         { key: 'wheat', label: '🌾 Wheat' },
@@ -956,13 +977,14 @@
         container.appendChild(btn);
       });
 
+      const isSingleCommodity = (currentCommodity !== 'summary' && currentCommodity !== 'inspections');
       const destWrapper = document.getElementById('dest-dropdown-wrapper');
       if (destWrapper) {
-        destWrapper.style.display = (currentCommodity === 'summary' || currentCommodity === 'inspections') ? 'none' : 'block';
+        destWrapper.style.display = isSingleCommodity ? 'block' : 'none';
       }
 
-      const pkg = COMMODITIES[currentCommodity];
-      const hasChina = pkg && pkg.destinations && pkg.destinations.some(d => d.id === 'china' || d.id.includes('china'));
+      const pkg = isSingleCommodity ? COMMODITIES[currentCommodity] : null;
+      const hasChina = pkg && Array.isArray(pkg.destinations) && pkg.destinations.some(d => d.id === 'china' || d.id.includes('china'));
       const chinaBtn = document.getElementById('preset-btn-china');
       if (chinaBtn) {
         chinaBtn.style.display = hasChina ? 'block' : 'none';
