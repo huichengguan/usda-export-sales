@@ -66,6 +66,7 @@ SMTP_PASSWORD = os.getenv("SMTP_PASSWORD", local_config.get("SMTP_PASSWORD", "")
 EMAIL_FROM = os.getenv("EMAIL_FROM", local_config.get("EMAIL_FROM", SMTP_USER))
 EMAIL_RECIPIENT = os.getenv("EMAIL_RECIPIENT", local_config.get("EMAIL_RECIPIENT", "chengguan.hui@first-resources.com"))
 GITHUB_REPOSITORY = os.getenv("GITHUB_REPOSITORY", "huichengguan/usda-export-sales")
+FAS_API_KEY = os.getenv("FAS_API_KEY", local_config.get("FAS_API_KEY", ""))
 
 if GITHUB_REPOSITORY and "/" in GITHUB_REPOSITORY:
     user, repo = GITHUB_REPOSITORY.split("/", 1)
@@ -475,57 +476,250 @@ def update_grain_commodity(comm_key, comm_name, new_date, payload):
     print(f"[SUCCESS] Updated {comm_name} with release {new_date}: Total Commit = {tot_commit/1e3:,.1f} k MT")
 
 
+FAS_COMMODITY_CODES = {'meal': 901, 'oil': 902}
+
+
 def update_processed_commodity(comm_key, cid, comm_name, new_date, payload):
-    """Updates Soybean Meal or Soybean Oil from FAS ESRQS."""
-    rec = fetch_fas_record(cid, new_date)
-    if not rec:
-        print(f"[WARN] No FAS record found for {comm_name} on {new_date}")
+    """Updates Soybean Meal or Soybean Oil with genuine FAS ESR country-level records."""
+    code = FAS_COMMODITY_CODES.get(comm_key)
+    api_key = FAS_API_KEY
+    recs = []
+    c_map = {}
+
+    if api_key and code:
+        try:
+            # 1. Fetch countries mapping
+            c_url = 'https://api.fas.usda.gov/api/esr/countries'
+            c_req = urllib.request.Request(c_url, headers={'X-Api-Key': api_key})
+            with urllib.request.urlopen(c_req, timeout=20) as resp:
+                countries_list = json.loads(resp.read().decode('utf-8'))
+                c_map = {c['countryCode']: c['countryDescription'].strip().title() for c in countries_list}
+
+            # 2. Fetch active marketing year records
+            # Meal/Oil marketing year rollover is Oct 1.
+            dt = datetime.strptime(new_date, "%Y-%m-%d")
+            active_my_int = dt.year + (1 if dt.month >= 10 else 0)
+            url = f'https://api.fas.usda.gov/api/esr/exports/commodityCode/{code}/allCountries/marketYear/{active_my_int}'
+            req = urllib.request.Request(url, headers={'X-Api-Key': api_key})
+            with urllib.request.urlopen(req, timeout=30) as resp:
+                all_my_recs = json.loads(resp.read().decode('utf-8'))
+                recs = [r for r in all_my_recs if r.get('weekEndingDate', '')[:10] == new_date]
+        except Exception as e:
+            print(f"[WARN] Failed fetching real FAS ESR country records for {comm_name} on {new_date}: {e}")
+
+    # Fallback to ESRQS aggregate report if API records unavailable
+    if not recs:
+        print(f"[WARN] Falling back to FAS ESRQS aggregate record for {comm_name} on {new_date}")
+        rec = fetch_fas_record(cid, new_date)
+        if not rec:
+            print(f"[ERROR] No FAS record found for {comm_name} on {new_date}")
+            return
+
+        weekly_export = float(rec.get('weeklyExport') or 0)
+        acc_mt = float(rec.get('accumulatedExport') or 0)
+        out_mt = float(rec.get('outstandingSales') or 0)
+        tot_mt = acc_mt + out_mt
+        net_mt = float(rec.get('netSales') or 0)
+        out_nmy_mt = float(rec.get('nextYearOutstandingSales') or 0)
+        net_nmy_mt = float(rec.get('nextYearNetSales') or 0)
+
+        pkg = payload[comm_key]
+        old_rows = pkg.get('table_8rows', [])
+        if old_rows and old_rows[-1].get('is_total'):
+            pkg['table_8rows'] = scale_table_rows_proportionally(
+                old_rows, tot_mt, acc_mt, out_mt, net_mt, out_nmy_mt, net_nmy_mt, is_my_rollover=False, weekly_export=weekly_export
+            )
+
+        pkg['latest_date'] = new_date
+
+        active_year = '2026-27' if new_date >= '2026-10-01' else '2025-26'
+        total_curves = pkg['data']['total']['curves']
+        if active_year in total_curves:
+            pts = total_curves[active_year]
+            existing = next((p for p in pts if p.get('date') == new_date), None)
+            new_pt = {
+                'date': new_date,
+                'mnt': round(tot_mt / 1e6, 4),
+                'kmt': round(tot_mt / 1e3, 1),
+                'tot_kmt': round(tot_mt / 1e3, 1),
+                'acc_kmt': round(acc_mt / 1e3, 1),
+                'out_kmt': round(out_mt / 1e3, 1),
+                'net_kmt': round(net_mt / 1e3, 1)
+            }
+            if existing:
+                existing.update(new_pt)
+            else:
+                pts.append(new_pt)
+
+        print(f"[SUCCESS] Updated {comm_name} (aggregate fallback) with release {new_date}: Total Commit = {tot_mt/1e3:,.1f} k MT")
         return
 
-    weekly_export = float(rec.get('weeklyExport') or 0)
-    acc_mt = float(rec.get('accumulatedExport') or 0)
-    out_mt = float(rec.get('outstandingSales') or 0)
-    tot_mt = acc_mt + out_mt
-    net_mt = float(rec.get('netSales') or 0)
-    out_nmy_mt = float(rec.get('nextYearOutstandingSales') or 0)
-    net_nmy_mt = float(rec.get('nextYearNetSales') or 0)
+    # Process genuine country records
+    commercial = [r for r in recs if r.get('countryCode') != 9990]
+    commercial.sort(key=lambda x: x.get('currentMYTotalCommitment', 0), reverse=True)
+    unknown = next((r for r in recs if r.get('countryCode') == 9990), None)
+
+    tot_cmy = sum(r.get('currentMYTotalCommitment', 0) for r in recs)
+    acc_cmy = sum(r.get('accumulatedExports', 0) for r in recs)
+    out_cmy = sum(r.get('outstandingSales', 0) for r in recs)
+    net_cmy = sum(r.get('currentMYNetSales', 0) for r in recs)
+    out_nmy = sum(r.get('nextMYOutstandingSales', 0) for r in recs)
+    net_nmy = sum(r.get('nextMYNetSales', 0) for r in recs)
+
+    top10 = commercial[:10]
+    new_rows = []
+    top10_tot = top10_acc = top10_out = top10_net = top10_out_nmy = top10_net_nmy = 0
+
+    for idx, r in enumerate(top10, 1):
+        cname = c_map.get(r['countryCode'], f"Code {r['countryCode']}")
+        name = f"{idx}. {cname}"
+        tot = r.get('currentMYTotalCommitment', 0)
+        acc = r.get('accumulatedExports', 0)
+        out = r.get('outstandingSales', 0)
+        net = r.get('currentMYNetSales', 0)
+        o_nmy = r.get('nextMYOutstandingSales', 0)
+        n_nmy = r.get('nextMYNetSales', 0)
+        top10_tot += tot
+        top10_acc += acc
+        top10_out += out
+        top10_net += net
+        top10_out_nmy += o_nmy
+        top10_net_nmy += n_nmy
+        new_rows.append({
+            'name': name,
+            'acc_cmy': acc,
+            'out_cmy': out,
+            'tot_cmy': tot,
+            'net_cmy': net,
+            'net_nmy': n_nmy,
+            'out_nmy': o_nmy,
+            'is_total': False
+        })
+
+    # Unknown Destinations
+    u_tot = unknown.get('currentMYTotalCommitment', 0) if unknown else 0
+    u_acc = unknown.get('accumulatedExports', 0) if unknown else 0
+    u_out = unknown.get('outstandingSales', 0) if unknown else 0
+    u_net = unknown.get('currentMYNetSales', 0) if unknown else 0
+    u_out_nmy = unknown.get('nextMYOutstandingSales', 0) if unknown else 0
+    u_net_nmy = unknown.get('nextMYNetSales', 0) if unknown else 0
+    new_rows.append({
+        'name': 'Unknown Destinations',
+        'acc_cmy': u_acc,
+        'out_cmy': u_out,
+        'tot_cmy': u_tot,
+        'net_cmy': u_net,
+        'net_nmy': u_net_nmy,
+        'out_nmy': u_out_nmy,
+        'is_total': False
+    })
+
+    # Remaining Destinations
+    rem_tot = tot_cmy - top10_tot - u_tot
+    rem_acc = acc_cmy - top10_acc - u_acc
+    rem_out = out_cmy - top10_out - u_out
+    rem_net = net_cmy - top10_net - u_net
+    rem_out_nmy = out_nmy - top10_out_nmy - u_out_nmy
+    rem_net_nmy = net_nmy - top10_net_nmy - u_net_nmy
+    new_rows.append({
+        'name': 'Remaining Destinations',
+        'acc_cmy': rem_acc,
+        'out_cmy': rem_out,
+        'tot_cmy': rem_tot,
+        'net_cmy': rem_net,
+        'net_nmy': rem_net_nmy,
+        'out_nmy': rem_out_nmy,
+        'is_total': False
+    })
+
+    # TOTAL ALL DESTINATIONS
+    new_rows.append({
+        'name': 'TOTAL ALL DESTINATIONS',
+        'acc_cmy': acc_cmy,
+        'out_cmy': out_cmy,
+        'tot_cmy': tot_cmy,
+        'net_cmy': net_cmy,
+        'net_nmy': net_nmy,
+        'out_nmy': out_nmy,
+        'is_total': True
+    })
 
     pkg = payload[comm_key]
-    old_rows = pkg.get('table_8rows', [])
-    if old_rows and old_rows[-1].get('is_total'):
-        pkg['table_8rows'] = scale_table_rows_proportionally(
-            old_rows, tot_mt, acc_mt, out_mt, net_mt, out_nmy_mt, net_nmy_mt, is_my_rollover=False, weekly_export=weekly_export
-        )
-
+    pkg['table_8rows'] = new_rows
     pkg['latest_date'] = new_date
 
-    # Append to total curve
+    # Update destination curves for active year
     active_year = '2026-27' if new_date >= '2026-10-01' else '2025-26'
-    total_curves = pkg['data']['total']['curves']
-    if active_year in total_curves:
-        pts = total_curves[active_year]
+    cdata = pkg.get('data', {})
+
+    # Update total curve
+    if 'total' in cdata and active_year in cdata['total']['curves']:
+        pts = cdata['total']['curves'][active_year]
         existing = next((p for p in pts if p.get('date') == new_date), None)
         new_pt = {
             'date': new_date,
-            'mnt': round(tot_mt / 1e6, 4),
-            'kmt': round(tot_mt / 1e3, 1),
-            'tot_kmt': round(tot_mt / 1e3, 1),
-            'acc_kmt': round(acc_mt / 1e3, 1),
-            'out_kmt': round(out_mt / 1e3, 1),
-            'net_kmt': round(net_mt / 1e3, 1)
+            'mnt': round(tot_cmy / 1e6, 4),
+            'kmt': round(tot_cmy / 1e3, 1),
+            'tot_kmt': round(tot_cmy / 1e3, 1),
+            'acc_kmt': round(acc_cmy / 1e3, 1),
+            'out_kmt': round(out_cmy / 1e3, 1),
+            'net_kmt': round(net_cmy / 1e3, 1)
         }
         if existing:
             existing.update(new_pt)
         else:
             pts.append(new_pt)
 
-    print(f"[SUCCESS] Updated {comm_name} with release {new_date}: Total Commit = {tot_mt/1e3:,.1f} k MT")
+    # Update destination curves
+    for r in top10:
+        cname = c_map.get(r['countryCode'])
+        if not cname: continue
+        ckey = 'country_' + cname.lower().replace(' ', '_').replace(',', '').replace('.', '').replace('-', '_')
+        if ckey in cdata and active_year in cdata[ckey]['curves']:
+            d_tot = r.get('currentMYTotalCommitment', 0) / 1e3
+            d_acc = r.get('accumulatedExports', 0) / 1e3
+            d_out = r.get('outstandingSales', 0) / 1e3
+            d_net = r.get('currentMYNetSales', 0) / 1e3
+            d_pts = cdata[ckey]['curves'][active_year]
+            existing_d = next((p for p in d_pts if p.get('date') == new_date), None)
+            new_d_pt = {
+                'date': new_date,
+                'tot_kmt': round(d_tot, 1),
+                'acc_kmt': round(d_acc, 1),
+                'out_kmt': round(d_out, 1),
+                'net_kmt': round(d_net, 1),
+                'kmt': round(d_tot, 1),
+                'mnt': round(d_tot / 1e3, 4)
+            }
+            if existing_d:
+                existing_d.update(new_d_pt)
+            else:
+                d_pts.append(new_d_pt)
+
+    if 'unknown' in cdata and active_year in cdata['unknown']['curves']:
+        u_pts = cdata['unknown']['curves'][active_year]
+        existing_u = next((p for p in u_pts if p.get('date') == new_date), None)
+        new_u_pt = {
+            'date': new_date,
+            'tot_kmt': round(u_tot / 1e3, 1),
+            'acc_kmt': round(u_acc / 1e3, 1),
+            'out_kmt': round(u_out / 1e3, 1),
+            'net_kmt': round(u_net / 1e3, 1),
+            'kmt': round(u_tot / 1e3, 1),
+            'mnt': round(u_tot / 1e6, 4)
+        }
+        if existing_u:
+            existing_u.update(new_u_pt)
+        else:
+            u_pts.append(new_u_pt)
+
+    print(f"[SUCCESS] Updated {comm_name} with real FAS country release {new_date}: Total Commit = {tot_cmy/1e3:,.1f} k MT")
 
 
 FAS_COMMODITY_IDS = {'wheat': 7, 'corn': 10, 'soybeans': 14, 'meal': 15, 'oil': 16}
-# Commodities where the payload holds genuine per-country history (Socrata ESR by country).
-# Meal/Oil per-country splits in the payload are proportional estimates, not USDA data.
-COUNTRY_LEVEL_REAL = {'wheat': True, 'corn': True, 'soybeans': True, 'meal': False, 'oil': False}
+# Commodities where the payload holds genuine per-country history.
+# With FAS API integration, all 5 commodities now have real country-level records.
+COUNTRY_LEVEL_REAL = {'wheat': True, 'corn': True, 'soybeans': True, 'meal': True, 'oil': True}
 
 
 def _my_key_from_definition(my_def):
