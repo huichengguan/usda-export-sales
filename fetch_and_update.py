@@ -522,6 +522,83 @@ def update_processed_commodity(comm_key, cid, comm_name, new_date, payload):
     print(f"[SUCCESS] Updated {comm_name} with release {new_date}: Total Commit = {tot_mt/1e3:,.1f} k MT")
 
 
+FAS_COMMODITY_IDS = {'wheat': 7, 'corn': 10, 'soybeans': 14, 'meal': 15, 'oil': 16}
+# Commodities where the payload holds genuine per-country history (Socrata ESR by country).
+# Meal/Oil per-country splits in the payload are proportional estimates, not USDA data.
+COUNTRY_LEVEL_REAL = {'wheat': True, 'corn': True, 'soybeans': True, 'meal': False, 'oil': False}
+
+
+def _my_key_from_definition(my_def):
+    """'Oct 2025/Sep 2026' -> '2025-26'."""
+    try:
+        a, b = my_def.split('/')
+        y1 = int(a.strip().split()[-1])
+        y2 = int(b.strip().split()[-1])
+        return f"{y1}-{str(y2)[-2:]}"
+    except Exception:
+        return None
+
+
+def build_thursday_same_week_totals(payload, n_years=5):
+    """Thursday FAS ESR only. For each commodity, finds the marketing year + MY week number of the
+    latest release and pulls the REAL FAS totals at the same MY week of the prior n_years.
+    Stored in payload[comm]['thu_same_week']."""
+    for comm, cid in FAS_COMMODITY_IDS.items():
+        pkg = payload.get(comm)
+        if not pkg:
+            continue
+        rel = pkg.get('latest_date')
+        if not rel:
+            continue
+        try:
+            mdy = datetime.strptime(rel, "%Y-%m-%d").strftime("%m/%d/%Y")
+            url = f'{BASE_FAS_URL}?WeekEndingDate={mdy}&CommodityId={cid}'
+            req = urllib.request.Request(url, headers={'User-Agent': 'Mozilla/5.0', 'Referer': 'https://apps.fas.usda.gov/esrqs/'})
+            with urllib.request.urlopen(req, timeout=60) as resp:
+                hist = json.loads(resp.read().decode('utf-8'))
+        except Exception as e:
+            print(f"[WARN] Same-week FAS history fetch failed for {comm}: {e}")
+            continue
+
+        cur = next((r for r in reversed(hist) if r.get('weekEndingDate', '')[:10] == rel), None)
+        if not cur:
+            print(f"[WARN] Release {rel} not found in FAS history for {comm}")
+            continue
+        cur_key = _my_key_from_definition(cur['myDefinition'])
+        wk = int(cur['weekNumber'])
+
+        by_my = {}
+        for r in hist:
+            k = _my_key_from_definition(r.get('myDefinition', ''))
+            if k:
+                by_my.setdefault(k, []).append(r)
+
+        def pt(r):
+            acc = float(r.get('accumulatedExport') or 0) / 1e3
+            out = float(r.get('outstandingSales') or 0) / 1e3
+            return {'date': r['weekEndingDate'][:10], 'week': int(r['weekNumber']),
+                    'acc_kmt': round(acc, 1), 'out_kmt': round(out, 1), 'tot_kmt': round(acc + out, 1)}
+
+        y0 = int(cur_key[:4])
+        years = {}
+        for i in range(1, n_years + 1):
+            k = f"{y0 - i}-{str(y0 - i + 1)[-2:]}"
+            recs = [r for r in by_my.get(k, []) if r.get('mycoTypeName', 'Standard') == 'Standard'] or by_my.get(k, [])
+            cands = [r for r in recs if int(r['weekNumber']) <= wk]
+            if cands:
+                years[k] = pt(max(cands, key=lambda r: int(r['weekNumber'])))
+
+        pkg['thu_same_week'] = {
+            'current_my': cur_key,
+            'my_definition': cur['myDefinition'],
+            'week': wk,
+            'current': pt(cur),
+            'years': years,
+            'country_level_real': COUNTRY_LEVEL_REAL.get(comm, False),
+        }
+        print(f"[SUCCESS] {comm}: same-week FAS totals built (MY {cur_key}, week {wk}, {len(years)} prior years)")
+
+
 TRADE_EXPECTATIONS_DATABASE = {
     '2026-09-24': {
         'corn': {'low_kmt': 800.0, 'high_kmt': 1500.0, 'source': 'Reuters / Trade Survey'},
@@ -1955,6 +2032,7 @@ def main():
         update_processed_commodity('meal', 15, 'Soybean Meal', active_thu_date, payload)
         update_processed_commodity('oil', 16, 'Soybean Oil', active_thu_date, payload)
         recalculate_pacing_tracker(payload)
+        build_thursday_same_week_totals(payload)
         payload['summary'] = build_multi_commodity_summary(payload, active_thu_date)
     else:
         print(f"[INFO] Preserving existing Thursday FAS Export Sales data ({current_thu_date}).")

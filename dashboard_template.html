@@ -1964,20 +1964,24 @@
       return null;
     }
 
-    function thuCompVals(key, cdata, year, idx) {
+    function thuCompVals(key, cdata, year, curIdx, priorYears) {
       const zero = { tot: 0, acc: 0, out: 0, found: false };
       if (!key || !cdata[key]) return zero;
       const curves = cdata[key].curves || {};
       const pick = (y) => {
         const arr = curves[y];
-        if (!arr || arr.length <= idx) return null;
-        const p = arr[idx];
-        return { tot: p.tot_kmt || 0, acc: p.acc_kmt || 0, out: p.out_kmt || 0 };
+        if (!arr || arr.length === 0) return null;
+        const targetIdx = Math.min(curIdx, arr.length - 1);
+        const p = arr[targetIdx];
+        if (!p) return null;
+        return { tot: p.tot_kmt || 0, acc: p.acc_kmt || 0, out: p.out_kmt || 0, date: p.date };
       };
       if (year === '5yr_avg') {
-        const yrs = ['2021-22', '2022-23', '2023-24', '2024-25', '2025-26'];
         let s = { tot: 0, acc: 0, out: 0 }, n = 0;
-        yrs.forEach(y => { const p = pick(y); if (p) { s.tot += p.tot; s.acc += p.acc; s.out += p.out; n++; } });
+        (priorYears || ['2025-26', '2024-25', '2023-24', '2022-23', '2021-22']).forEach(y => {
+          const p = pick(y);
+          if (p) { s.tot += p.tot; s.acc += p.acc; s.out += p.out; n++; }
+        });
         return n ? { tot: s.tot / n, acc: s.acc / n, out: s.out / n, found: true } : zero;
       }
       const p = pick(year);
@@ -1990,30 +1994,70 @@
       const tbody = document.getElementById('thu-dest-tbody');
       if (!pkg || !thead || !tbody || !pkg.data || !pkg.table_8rows) return;
 
+      const cdata = pkg.data;
+      const curMy = pkg.thu_same_week?.current_my || (['meal', 'oil'].includes(currentCommodity) ? '2025-26' : '2026-27');
+      const curMyLabel = curMy.replace('-', '/');
+      const isCloseout = (curMy === '2025-26' && ['meal', 'oil'].includes(currentCommodity));
+
+      // Prior comparison years
+      const priorYears = (pkg.thu_same_week && pkg.thu_same_week.years && Object.keys(pkg.thu_same_week.years).length > 0)
+        ? Object.keys(pkg.thu_same_week.years)
+        : (curMy === '2025-26'
+            ? ['2024-25', '2023-24', '2022-23', '2021-22', '2020-21']
+            : ['2025-26', '2024-25', '2023-24', '2022-23', '2021-22']);
+
       const sel = document.getElementById('thu-dest-compare-year');
-      if (sel) currentThuDestCompareYear = sel.value;
+      if (sel) {
+        // Sync select options if they don't match the current commodity's prior years
+        const existingOpts = Array.from(sel.options).map(o => o.value);
+        const expectedOpts = [...priorYears, '5yr_avg'];
+        const matches = existingOpts.length === expectedOpts.length && expectedOpts.every((v, i) => v === existingOpts[i]);
+        if (!matches) {
+          const prevVal = sel.value;
+          sel.innerHTML = priorYears.map((y, i) => `<option value="${y}">${y.replace('-', '/')}${i === 0 ? ' (Prior Year)' : ''}</option>`).join('') +
+            '<option value="5yr_avg">5-Year Average</option>';
+          if (expectedOpts.includes(prevVal)) {
+            sel.value = prevVal;
+          } else {
+            sel.value = priorYears[0];
+          }
+        }
+        currentThuDestCompareYear = sel.value;
+      }
+
       const year = currentThuDestCompareYear;
       const yrLabel = year === '5yr_avg' ? '5-Yr Avg' : year.replace('-', '/');
 
       const isKmt = currentUnit === 'kmt';
       const m = isKmt ? 1 : 0.001;
-      const cdata = pkg.data;
-      const currCurve = (cdata.total && cdata.total.curves && cdata.total.curves['2026-27']) || [];
-      const idx = currCurve.length - 1;
-      const currDate = idx >= 0 ? currCurve[idx].date : '';
+      
+      const currCurve = (cdata.total && cdata.total.curves && cdata.total.curves[curMy]) || [];
+      const idx = currCurve.length > 0 ? currCurve.length - 1 : 0;
+      const currDate = idx >= 0 && currCurve[idx] ? currCurve[idx].date : (pkg.latest_date || '');
 
       // Find the comparison-year week-ending date for the footnote
       let compDate = '';
-      if (year !== '5yr_avg' && cdata.total.curves[year] && cdata.total.curves[year][idx]) {
-        compDate = cdata.total.curves[year][idx].date;
+      if (year !== '5yr_avg' && cdata.total && cdata.total.curves && cdata.total.curves[year]) {
+        const arr = cdata.total.curves[year];
+        const tIdx = Math.min(idx, arr.length - 1);
+        if (arr[tIdx]) compDate = arr[tIdx].date;
       }
 
       const titleEl = document.getElementById('thu-dest-title');
-      if (titleEl) titleEl.textContent = `${pkg.commodity} Top Destinations — 2026/27 vs ${yrLabel} (Same Week)`;
+      if (titleEl) titleEl.textContent = `${pkg.commodity} Top Destinations — ${curMyLabel} vs ${yrLabel} (Same Week${isCloseout ? ' - Final Week' : ''})`;
+      
+      const subEl = document.getElementById('thu-dest-subtitle');
+      if (subEl) {
+        subEl.textContent = isCloseout
+          ? `Cumulative ${curMyLabel} closeout position by destination vs final week of selected marketing year`
+          : `Cumulative ${curMyLabel} position by destination vs the same seasonal week of the selected year`;
+      }
+
       const foot = document.getElementById('thu-dest-footnote');
       if (foot) {
-        foot.textContent = `Source: USDA FAS Weekly Export Sales (Thursday). Current week ending ${currDate}` +
-          (year === '5yr_avg' ? ' vs average of 2021/22–2025/26 at the same marketing-year week.' : ` vs ${yrLabel} week ending ${compDate}.`) +
+        const compDateStr = compDate ? ` week ending ${compDate}` : '';
+        foot.textContent = `Source: USDA FAS Weekly Export Sales (Thursday). Current ${curMyLabel} release week ending ${currDate}` +
+          (year === '5yr_avg' ? ` vs 5-year average (${priorYears[priorYears.length-1].replace('-','/')}–${priorYears[0].replace('-','/')}) at the same marketing-year week.` : ` vs ${yrLabel}${compDateStr}.`) +
           ` "Remaining" for the comparison year = Total minus the listed destinations. Units: ${isKmt ? '1,000 MT' : 'mn t'}.`;
       }
 
@@ -2025,10 +2069,10 @@
 
       rows.forEach(r => {
         const curr = { tot: (r.tot_cmy || 0) / 1000, acc: (r.acc_cmy || 0) / 1000, out: (r.out_cmy || 0) / 1000 };
-        if (r.is_total) { totalRow = { name: r.name, curr, comp: thuCompVals('total', cdata, year, idx), kind: 'total' }; return; }
+        if (r.is_total) { totalRow = { name: r.name, curr, comp: thuCompVals('total', cdata, year, idx, priorYears), kind: 'total' }; return; }
         if (r.name === 'Remaining Destinations') { remainingRow = { name: r.name, curr, comp: null, kind: 'remaining' }; return; }
         const key = thuMatchDestKey(r.name, cdata);
-        const comp = thuCompVals(key, cdata, year, idx);
+        const comp = thuCompVals(key, cdata, year, idx, priorYears);
         if (comp.found) { matchedSum.tot += comp.tot; matchedSum.acc += comp.acc; matchedSum.out += comp.out; }
         built.push({ name: r.name, curr, comp, kind: key === 'unknown' ? 'unknown' : 'dest' });
       });
@@ -2054,14 +2098,14 @@
         factors.forEach((f, i) => {
           const border = i > 0 ? 'border-l border-[var(--border,#cbd5e1)]' : '';
           h1 += `<th colspan="3" class="py-1.5 px-3 text-center ${border} ${f === 'tot' ? 'text-blue-700 dark:text-blue-400' : ''}">${fLabel[f]}</th>`;
-          h2 += `<th class="py-1.5 px-3 text-right ${border}">2026/27</th><th class="py-1.5 px-3 text-right">${yrLabel}</th><th class="py-1.5 px-3 text-right">+/-</th>`;
+          h2 += `<th class="py-1.5 px-3 text-right ${border}">${curMyLabel}</th><th class="py-1.5 px-3 text-right">${yrLabel}</th><th class="py-1.5 px-3 text-right">+/-</th>`;
         });
         thead.innerHTML = h1 + '</tr>' + h2 + '</tr>';
       } else {
         const f = factors[0];
         thead.innerHTML = `<tr>
           <th class="py-2.5 px-3">Destination</th>
-          <th class="py-2.5 px-3 text-right">2026/27 ${fLabel[f]}</th>
+          <th class="py-2.5 px-3 text-right">${curMyLabel} ${fLabel[f]}</th>
           <th class="py-2.5 px-3 text-right">${yrLabel} (Same Wk)</th>
           <th class="py-2.5 px-3 text-right">Variance (+/-)</th>
           <th class="py-2.5 px-3 text-right">Variance %</th>
