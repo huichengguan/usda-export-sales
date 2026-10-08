@@ -777,8 +777,11 @@ def build_thursday_same_week_totals(payload, n_years=5):
         years = {}
         for i in range(1, n_years + 1):
             k = f"{y0 - i}-{str(y0 - i + 1)[-2:]}"
-            recs = [r for r in by_my.get(k, []) if r.get('mycoTypeName', 'Standard') == 'Standard'] or by_my.get(k, [])
-            cands = [r for r in recs if int(r['weekNumber']) <= wk]
+            recs = by_my.get(k, [])
+            # In week 1, FAS marks the record as 'MY Starting', not 'Standard'
+            cands = [r for r in recs if int(r.get('weekNumber', 999)) <= wk and r.get('mycoTypeName') in ('Standard', 'MY Starting')]
+            if not cands:
+                cands = [r for r in recs if int(r.get('weekNumber', 999)) <= wk]
             if cands:
                 years[k] = pt(max(cands, key=lambda r: int(r['weekNumber'])))
 

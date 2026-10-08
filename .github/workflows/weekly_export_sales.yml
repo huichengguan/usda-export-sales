@@ -53,6 +53,7 @@ jobs:
           EMAIL_FROM: ${{ secrets.EMAIL_FROM || secrets.SMTP_USER }}
           EMAIL_RECIPIENT: ${{ secrets.EMAIL_RECIPIENT || 'chengguan.hui@first-resources.com' }}
           GITHUB_REPOSITORY: ${{ github.repository }}
+          FAS_API_KEY: ${{ secrets.FAS_API_KEY || 'ci8AS2Zj464MrW4lscfKvOxZYH32O1ChvYgcL7Eh' }}
         run: |
           python fetch_and_update.py
 
@@ -61,17 +62,5 @@ jobs:
           git config --global user.name "github-actions[bot]"
           git config --global user.email "github-actions[bot]@users.noreply.github.com"
           git add index.html multi_commodity_payload.json
-          git commit -m "Auto-update USDA Export Sales dashboard [skip ci]" || echo "No changes to commit"
+          git commit -m "Auto-update USDA Export Sales dashboard" || echo "No changes to commit"
           git push || echo "No changes to push"
-
-      - name: Setup GitHub Pages
-        uses: actions/configure-pages@v4
-
-      - name: Upload artifact for GitHub Pages
-        uses: actions/upload-pages-artifact@v3
-        with:
-          path: '.'
-
-      - name: Deploy to GitHub Pages
-        id: deployment
-        uses: actions/deploy-pages@v4
