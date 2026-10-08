@@ -2212,10 +2212,6 @@ def main():
     if not update_fas and not update_insp:
         print(f"[INFO] Current data is already up-to-date with both USDA reports.")
         print(f"FAS Sales (Thu): {current_thu_date} | FGIS Inspections (Mon): {current_insp_date}")
-        now_utc = datetime.now(timezone.utc)
-        if now_utc.weekday() == 3:  # Thursday
-            print(f"[NOTICE] It is Thursday and no new FAS release is online. Checking holiday postponement notice...")
-            send_holiday_delay_notice(current_thu_date)
         print(f"Exiting cleanly.")
         return
 
