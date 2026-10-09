@@ -887,8 +887,8 @@ def build_multi_commodity_summary(payload, release_date):
         ('corn', 'Corn', '🌽', 10, 'MY 2026/27 (Wk 3)' if release_date == '2026-09-17' else 'MY 2026/27'),
         ('soybeans', 'Soybeans', '🌿', 14, 'MY 2026/27 (Wk 3)' if release_date == '2026-09-17' else 'MY 2026/27'),
         ('wheat', 'Wheat', '🌾', 7, 'MY 2026/27 (Wk 16)' if release_date == '2026-09-17' else 'MY 2026/27'),
-        ('meal', 'Soybean Meal', '📦', 15, 'MY 2025/26 (Wk 51)' if release_date == '2026-09-17' else 'MY 2025/26'),
-        ('oil', 'Soybean Oil', '🫗', 16, 'MY 2025/26 (Wk 51)' if release_date == '2026-09-17' else 'MY 2025/26')
+        ('meal', 'Soybean Meal', '📦', 15, 'MY 2026/27 (Wk 1)' if release_date >= '2026-10-01' else ('MY 2025/26 (Wk 51)' if release_date == '2026-09-17' else 'MY 2025/26')),
+        ('oil', 'Soybean Oil', '🫗', 16, 'MY 2026/27 (Wk 1)' if release_date >= '2026-10-01' else ('MY 2025/26 (Wk 51)' if release_date == '2026-09-17' else 'MY 2025/26'))
     ]
 
     date_estimates = TRADE_EXPECTATIONS_DATABASE.get(release_date, {})
@@ -1692,16 +1692,19 @@ def recalculate_pacing_tracker(payload):
         # 1. 2026/27 New Crop Pace
         nmy = item['usda_pacing'].get('nmy_2026_27')
         if nmy:
-            # If 2026/27 season has officially started (Wheat: June 1, Corn/Soybeans: Sept 1):
-            # Commitments are in tot_cmy. Otherwise (Meal & Oil until Oct 1), in out_nmy.
-            if cKey == 'wheat' or (cKey in ('corn', 'soybeans') and latest_date >= '2026-09-01'):
+            # If 2026/27 season has officially started (Wheat: June 1, Corn/Soybeans: Sept 1, Meal/Oil: Oct 1):
+            # Commitments are in tot_cmy. Otherwise (before Oct 1 for Meal/Oil), in out_nmy.
+            if cKey == 'wheat' or (cKey in ('corn', 'soybeans') and latest_date >= '2026-09-01') or (cKey in ('meal', 'oil') and latest_date >= '2026-10-01'):
                 commit_kmt = round(total_row['tot_cmy'] / 1e3, 1)
                 if cKey in ('corn', 'soybeans'):
+                    nmy['remaining_weeks'] = 47 if latest_date >= '2026-10-01' else 51
+                    nmy['status_desc'] = "Week 5 of 2026/27" if latest_date >= '2026-10-01' else "Week 1 of 2026/27 (Started Sept 1)"
+                elif cKey in ('meal', 'oil'):
                     nmy['remaining_weeks'] = 51
-                    nmy['status_desc'] = "Week 1 of 2026/27 (Started Sept 1)"
+                    nmy['status_desc'] = "Week 1 of 2026/27 (Started Oct 1)"
                 elif cKey == 'wheat':
-                    nmy['remaining_weeks'] = 38
-                    nmy['status_desc'] = "Week 14 of 2026/27 (Started June 1)"
+                    nmy['remaining_weeks'] = 34 if latest_date >= '2026-10-01' else 38
+                    nmy['status_desc'] = "Week 18 of 2026/27" if latest_date >= '2026-10-01' else "Week 14 of 2026/27 (Started June 1)"
             else:
                 commit_kmt = round(total_row['out_nmy'] / 1e3, 1)
 
@@ -1735,9 +1738,9 @@ def recalculate_pacing_tracker(payload):
         # 2. 2025/26 Close-out Audit
         cmy = item['usda_pacing'].get('cmy_2025_26')
         if cmy:
-            # If 2025/26 season is completed (Wheat on May 31, Corn/Soybeans on Aug 31)
-            if cKey == 'wheat' or (cKey in ('corn', 'soybeans') and latest_date >= '2026-09-01'):
-                cmy['status_desc'] = "Completed (Ended Aug 31, 2026)" if cKey != 'wheat' else "Completed (Ended May 31, 2026)"
+            # If 2025/26 season is completed (Wheat on May 31, Corn/Soybeans on Aug 31, Meal/Oil on Sep 30)
+            if cKey == 'wheat' or (cKey in ('corn', 'soybeans') and latest_date >= '2026-09-01') or (cKey in ('meal', 'oil') and latest_date >= '2026-10-01'):
+                cmy['status_desc'] = "Completed (Ended Sep 30, 2026)" if cKey in ('meal', 'oil') else ("Completed (Ended Aug 31, 2026)" if cKey != 'wheat' else "Completed (Ended May 31, 2026)")
                 cmy['remaining_weeks'] = 0
                 cmy['req_weekly_sales_pace_kmt'] = 0.0
                 cmy['req_weekly_sales_pace_mnt'] = 0.0
@@ -1986,8 +1989,8 @@ def build_email_body_html(payload, release_date):
         ('soybeans', 'Soybeans', '🌿', "MY 2026/2027 Active Season (Week 3)" if release_date == '2026-09-17' else ("MY 2026/2027 Active Season" if is_new_crop else "MY 2025/2026 Closeout & 2026/27 Forward Sales")),
         ('corn', 'Corn', '🌽', "MY 2026/2027 Active Season (Week 3)" if release_date == '2026-09-17' else ("MY 2026/2027 Active Season" if is_new_crop else "MY 2025/2026 Closeout & 2026/27 Forward Sales")),
         ('wheat', 'Wheat', '🌾', "MY 2026/2027 Active Season (Week 16)" if release_date == '2026-09-17' else "MY 2026/2027 Active Season"),
-        ('meal', 'Soybean Meal', '📦', "MY 2025/2026 Closeout (Week 51) & 2026/27 Forward Sales" if release_date == '2026-09-17' else "MY 2025/2026 Closeout & 2026/27 Forward Sales"),
-        ('oil', 'Soybean Oil', '🫗', "MY 2025/2026 Closeout (Week 51) & 2026/27 Forward Sales" if release_date == '2026-09-17' else "MY 2025/2026 Closeout & 2026/27 Forward Sales"),
+        ('meal', 'Soybean Meal', '📦', "MY 2026/2027 Active Season (Week 1)" if release_date >= '2026-10-01' else ("MY 2025/2026 Closeout (Week 51) & 2026/27 Forward Sales" if release_date == '2026-09-17' else "MY 2025/2026 Closeout & 2026/27 Forward Sales")),
+        ('oil', 'Soybean Oil', '🫗', "MY 2026/2027 Active Season (Week 1)" if release_date >= '2026-10-01' else ("MY 2025/2026 Closeout (Week 51) & 2026/27 Forward Sales" if release_date == '2026-09-17' else "MY 2025/2026 Closeout & 2026/27 Forward Sales")),
     ]
 
     summary_data = payload.get('summary')

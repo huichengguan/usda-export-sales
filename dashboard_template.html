@@ -1587,7 +1587,7 @@
       const labels = pkg.timeline_labels || [];
       const totalPoints = labels.length;
       const baseline = padding.top + plotH;
-      const kickoffIdx = 22; // Week 22 is official MY kickoff (Sep 1 for corn/soy/meal/oil, Jun 1 for wheat)
+      const kickoffIdx = 22; // Week 22 is official MY kickoff (Sep 1 for corn/soy, Jun 1 for wheat, Oct 1 for meal/oil)
       const xKickoff = padding.left + (plotW / (totalPoints - 1)) * kickoffIdx;
 
       // Subtle Background Shading for Pre-Season Forward Bookings Window
@@ -1995,9 +1995,9 @@
       if (!pkg || !thead || !tbody || !pkg.data || !pkg.table_8rows) return;
 
       const cdata = pkg.data;
-      const curMy = pkg.thu_same_week?.current_my || (['meal', 'oil'].includes(currentCommodity) ? '2025-26' : '2026-27');
+      const curMy = pkg.thu_same_week?.current_my || '2026-27';
       const curMyLabel = curMy.replace('-', '/');
-      const isCloseout = (curMy === '2025-26' && ['meal', 'oil'].includes(currentCommodity));
+      const isCloseout = (curMy === '2025-26');
 
       // Prior comparison years
       const priorYears = (pkg.thu_same_week && pkg.thu_same_week.years && Object.keys(pkg.thu_same_week.years).length > 0)
