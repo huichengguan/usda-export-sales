@@ -400,8 +400,8 @@
 
             <!-- Metric Mode: Cumulative vs Weekly -->
             <div class="inline-flex rounded-lg border border-[var(--border,#cbd5e1)] p-0.5 bg-[var(--secondary,#f1f5f9)] text-xs font-semibold">
-              <button id="insp-btn-metric-cum" onclick="setInspectionsMetric('cum')" class="px-3 py-1 rounded-md bg-white text-slate-900 shadow-xs font-bold transition-all">📈 Cumulative (Pacing)</button>
-              <button id="insp-btn-metric-weekly" onclick="setInspectionsMetric('weekly')" class="px-3 py-1 rounded-md text-slate-600 hover:text-slate-900 font-medium transition-all">📊 Weekly Volume</button>
+              <button id="insp-btn-metric-cum" onclick="setInspectionsMetric('cum')" class="px-3 py-1 rounded-md text-slate-600 hover:text-slate-900 font-medium transition-all">📈 Cumulative (Pacing)</button>
+              <button id="insp-btn-metric-weekly" onclick="setInspectionsMetric('weekly')" class="px-3 py-1 rounded-md bg-white text-slate-900 shadow-xs font-bold transition-all">📊 Weekly Volume</button>
             </div>
           </div>
         </div>
@@ -2573,7 +2573,7 @@
     // EXPORT INSPECTIONS JAVASCRIPT ENGINE (USDA AMS / FGIS Monday Report)
     // =========================================================================
     let currentInspectionsCommodity = 'corn'; // 'corn', 'soybeans', 'wheat'
-    let currentInspectionsMetric = 'cum'; // 'cum' (Cumulative Pacing) or 'weekly' (Weekly Volume)
+    let currentInspectionsMetric = 'weekly'; // 'weekly' (Weekly Volume, default) or 'cum' (Cumulative Pacing)
     let showInspectionsTarget = true;
     let inspectionsHoveredWeek = null;
 
@@ -2862,6 +2862,18 @@
           }
         }
       });
+
+      const btnCum = document.getElementById('insp-btn-metric-cum');
+      const btnWk = document.getElementById('insp-btn-metric-weekly');
+      if (btnCum && btnWk) {
+        if (currentInspectionsMetric === 'cum') {
+          btnCum.className = 'px-3 py-1 rounded-md bg-white text-slate-900 shadow-xs font-bold transition-all';
+          btnWk.className = 'px-3 py-1 rounded-md text-slate-600 hover:text-slate-900 font-medium transition-all';
+        } else {
+          btnWk.className = 'px-3 py-1 rounded-md bg-white text-slate-900 shadow-xs font-bold transition-all';
+          btnCum.className = 'px-3 py-1 rounded-md text-slate-600 hover:text-slate-900 font-medium transition-all';
+        }
+      }
 
       renderInspectionsYearPills();
       drawInspectionsChart();
