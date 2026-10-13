@@ -15,6 +15,7 @@ USDA Export Sales Automated Cloud & Local Pipeline
 
 import sys
 import os
+import re
 import json
 import smtplib
 import argparse
@@ -66,7 +67,8 @@ SMTP_PASSWORD = os.getenv("SMTP_PASSWORD", local_config.get("SMTP_PASSWORD", "")
 EMAIL_FROM = os.getenv("EMAIL_FROM", local_config.get("EMAIL_FROM", SMTP_USER))
 EMAIL_RECIPIENT = os.getenv("EMAIL_RECIPIENT", local_config.get("EMAIL_RECIPIENT", "chengguan.hui@first-resources.com"))
 GITHUB_REPOSITORY = os.getenv("GITHUB_REPOSITORY", "huichengguan/usda-export-sales")
-FAS_API_KEY = os.getenv("FAS_API_KEY", local_config.get("FAS_API_KEY", ""))
+AMS_API_KEY = os.getenv("AMS_API_KEY", local_config.get("AMS_API_KEY", ""))
+FAS_API_KEY = os.getenv("FAS_API_KEY", local_config.get("FAS_API_KEY", "")) or AMS_API_KEY
 
 if GITHUB_REPOSITORY and "/" in GITHUB_REPOSITORY:
     user, repo = GITHUB_REPOSITORY.split("/", 1)
@@ -836,6 +838,11 @@ DEFAULT_COMMODITY_TRADE_RANGES = {
 }
 
 INSPECTIONS_EXPECTATIONS_DATABASE = {
+    '2026-10-08': {
+        'corn': {'low_kmt': 1000.0, 'high_kmt': 1500.0, 'source': 'Reuters / Trade Survey'},
+        'soybeans': {'low_kmt': 800.0, 'high_kmt': 1400.0, 'source': 'Reuters / Trade Survey'},
+        'wheat': {'low_kmt': 250.0, 'high_kmt': 500.0, 'source': 'Reuters / Trade Survey'}
+    },
     '2026-10-01': {
         'corn': {'low_kmt': 1100.0, 'high_kmt': 1500.0, 'source': 'Reuters / Trade Survey'},
         'soybeans': {'low_kmt': 900.0, 'high_kmt': 1400.0, 'source': 'Reuters / Trade Survey'},
@@ -1179,6 +1186,89 @@ def fetch_inspections_destination_comparisons(raw_by_grain_myear):
     return dest_comparison
 
 
+def fetch_wa_gr101_report():
+    """Fetches and parses the official USDA AMS Market News Grain Inspections for Export report (WA_GR101)."""
+    try:
+        headers = {'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)'}
+        req = urllib.request.Request('https://www.ams.usda.gov/mnreports/wa_gr101.txt', headers=headers)
+        with urllib.request.urlopen(req, timeout=15) as resp:
+            text = resp.read().decode('utf-8', errors='ignore')
+
+        m_date = re.search(r'REPORTED IN WEEK ENDING ([A-Z]{3} \d{2}, \d{4})', text)
+        if not m_date:
+            return None
+
+        dt_raw = m_date.group(1)
+        dt_obj = datetime.strptime(dt_raw.title(), '%b %d, %Y')
+        latest_date = dt_obj.strftime('%Y-%m-%d')
+
+        summary_data = {}
+        for g in ['BARLEY', 'CORN', 'SORGHUM', 'SOYBEANS', 'WHEAT']:
+            m = re.search(rf'^{g}\s+([\d,]+)\s+([\d,]+)\s+([\d,]+)\s+([\d,]+)\s+([\d,]+)', text, re.MULTILINE)
+            if m:
+                summary_data[g] = {
+                    'current_week': int(m.group(1).replace(',', '')),
+                    'previous_week': int(m.group(2).replace(',', '')),
+                    'previous_year_same_week': int(m.group(3).replace(',', '')),
+                    'current_mytd': int(m.group(4).replace(',', '')),
+                    'previous_mytd': int(m.group(5).replace(',', ''))
+                }
+
+        # Ports
+        port_section = text.split("GRAINS INSPECTED AND/OR WEIGHED FOR EXPORT BY REGION AND PORT AREA")[1].split("GRAINS INSPECTED AND/OR WEIGHED FOR EXPORT BY REGION AND COUNTRY OF DESTINATION")[0]
+        ports_by_grain = {'corn': defaultdict(float), 'soybeans': defaultdict(float), 'wheat': defaultdict(float)}
+
+        for line in port_section.split('\n'):
+            if 'SUBTOTAL' in line or 'TOTAL' in line or '---' in line or 'REGION' in line: continue
+            parts = line.split()
+            if not parts: continue
+            nums, pwords = [], []
+            for p in parts:
+                clean = p.replace(',', '')
+                if clean.isdigit(): nums.append(int(clean))
+                elif p not in ['LAKES', 'ATLANTIC', 'GULF', 'PACIFIC']: pwords.append(p)
+            if len(nums) >= 6 and pwords:
+                pname = " ".join(pwords).title()
+                if pname == 'S.': pname = 'S. Atlantic'
+                elif pname == 'N.': pname = 'N. Atlantic'
+                elif pname in ('Interior Interior', 'Interior'): pname = 'Interior'
+                w_mt, c_mt, s_mt = nums[0], nums[1] + nums[2], nums[4]
+                if w_mt > 0: ports_by_grain['wheat'][pname] += w_mt
+                if c_mt > 0: ports_by_grain['corn'][pname] += c_mt
+                if s_mt > 0: ports_by_grain['soybeans'][pname] += s_mt
+
+        # Destinations
+        dest_section = text.split("GRAINS INSPECTED AND/OR WEIGHED FOR EXPORT BY REGION AND COUNTRY OF DESTINATION")[-1]
+        dest_by_grain = {'corn': defaultdict(float), 'soybeans': defaultdict(float), 'wheat': defaultdict(float)}
+
+        for line in dest_section.split('\n'):
+            if 'SUBTOTAL' in line or 'TOTAL' in line or '---' in line or 'REGION' in line: continue
+            parts = line.split()
+            if not parts: continue
+            nums, cwords = [], []
+            for p in parts:
+                clean = p.replace(',', '')
+                if clean.isdigit(): nums.append(int(clean))
+                elif p not in ['LAKES', 'ATLANTIC', 'GULF', 'PACIFIC']: cwords.append(p)
+            if len(nums) >= 6 and cwords:
+                cname = " ".join(cwords).title()
+                if cname == 'S.': cname = 'S. Atlantic'
+                w_mt, c_mt, s_mt = nums[0], nums[1] + nums[2], nums[4]
+                if w_mt > 0: dest_by_grain['wheat'][cname] += w_mt
+                if c_mt > 0: dest_by_grain['corn'][cname] += c_mt
+                if s_mt > 0: dest_by_grain['soybeans'][cname] += s_mt
+
+        return {
+            'date': latest_date,
+            'summary': summary_data,
+            'ports': ports_by_grain,
+            'destinations': dest_by_grain
+        }
+    except Exception as e:
+        print(f"[WARN] Failed to fetch or parse WA_GR101 report: {e}")
+        return None
+
+
 def build_export_inspections_data(payload):
     """
     Fetches and builds the official USDA AMS / FGIS Grain Export Inspections data,
@@ -1211,11 +1301,6 @@ def build_export_inspections_data(payload):
         print(f"[SUCCESS] Ingested {len(rows)} weekly FGIS inspection aggregates from AgTransport.")
     except Exception as e:
         print(f"[WARN] Failed to fetch live export inspections from Socrata: {e}")
-        if 'inspections' in payload:
-            return payload['inspections']
-
-    if not rows:
-        return payload.get('inspections', {})
 
     raw_by_grain_myear = defaultdict(lambda: defaultdict(list))
     for r in rows:
@@ -1231,52 +1316,97 @@ def build_export_inspections_data(payload):
             'mnt': round(mt / 1e6, 3)
         })
 
-    latest_date = max(r['date'][:10] for r in rows)
+    latest_date = max((r['date'][:10] for r in rows), default='2026-09-24')
 
     # Ports and destinations for latest week
     ports_by_grain = defaultdict(list)
     dest_by_grain = defaultdict(list)
-    try:
-        ports_params = {
-            '$select': 'grain,port,sum(mt)',
-            '$where': f"grain in ('CORN', 'SOYBEANS', 'WHEAT') and date = '{latest_date}T00:00:00.000'",
-            '$group': 'grain,port',
-            '$order': 'sum(mt) DESC',
-            '$limit': 50
-        }
-        ports_url = 'https://agtransport.usda.gov/resource/sruw-w49i.json?' + urllib.parse.urlencode(ports_params)
-        ports_req = urllib.request.urlopen(ports_url, timeout=10)
-        ports_rows = json.loads(ports_req.read().decode('utf-8'))
-        for pr in ports_rows:
-            g = pr['grain'].lower()
-            ports_by_grain[g].append({
-                'port': pr.get('port', 'Unknown').title(),
-                'mt': float(pr.get('sum_mt') or 0),
-                'kmt': round(float(pr.get('sum_mt') or 0) / 1e3, 1)
-            })
 
-        dest_params = {
-            '$select': 'grain,destination,sum(mt)',
-            '$where': f"grain in ('CORN', 'SOYBEANS', 'WHEAT') and date = '{latest_date}T00:00:00.000'",
-            '$group': 'grain,destination',
-            '$order': 'sum(mt) DESC',
-            '$limit': 60
-        }
-        dest_url = 'https://agtransport.usda.gov/resource/sruw-w49i.json?' + urllib.parse.urlencode(dest_params)
-        dest_req = urllib.request.urlopen(dest_url, timeout=10)
-        dest_rows = json.loads(dest_req.read().decode('utf-8'))
-        for dr in dest_rows:
-            g = dr['grain'].lower()
-            dest_by_grain[g].append({
-                'destination': dr.get('destination', 'Unknown').title(),
-                'mt': float(dr.get('sum_mt') or 0),
-                'kmt': round(float(dr.get('sum_mt') or 0) / 1e3, 1)
-            })
-    except Exception as e:
-        print(f"[WARN] Error fetching ports/destinations for inspections: {e}")
+    # Check if direct USDA Market News report (WA_GR101) has a newer release than AgTransport
+    wa_rep = fetch_wa_gr101_report()
+    used_wa_rep = False
+    if wa_rep and wa_rep.get('date') and wa_rep['date'] > latest_date:
+        print(f"[UPDATE] Supplementing inspections with official USDA AMS WA_GR101 release for {wa_rep['date']}...")
+        latest_date = wa_rep['date']
+        used_wa_rep = True
+        for g_up in ['CORN', 'SOYBEANS', 'WHEAT']:
+            mt = float(wa_rep['summary'][g_up]['current_week'])
+            myear, week_num = get_inspection_myear_and_week(g_up, latest_date)
+            existing_wk = next((w for w in raw_by_grain_myear[g_up][myear] if w['date'] == latest_date), None)
+            if not existing_wk:
+                raw_by_grain_myear[g_up][myear].append({
+                    'date': latest_date,
+                    'week': week_num,
+                    'mt': mt,
+                    'kmt': round(mt / 1e3, 1),
+                    'mnt': round(mt / 1e6, 3)
+                })
+        ports_by_grain = defaultdict(list, {
+            g: [{'port': p, 'mt': mt, 'kmt': round(mt/1e3, 1)} for p, mt in sorted(wa_rep['ports'][g].items(), key=lambda x: x[1], reverse=True)]
+            for g in ['corn', 'soybeans', 'wheat']
+        })
+        dest_by_grain = defaultdict(list, {
+            g: [{'destination': d, 'mt': mt, 'kmt': round(mt/1e3, 1)} for d, mt in sorted(wa_rep['destinations'][g].items(), key=lambda x: x[1], reverse=True)]
+            for g in ['corn', 'soybeans', 'wheat']
+        })
+
+    if not rows and not used_wa_rep:
+        return payload.get('inspections', {})
+
+    if not used_wa_rep:
+        try:
+            ports_params = {
+                '$select': 'grain,port,sum(mt)',
+                '$where': f"grain in ('CORN', 'SOYBEANS', 'WHEAT') and date = '{latest_date}T00:00:00.000'",
+                '$group': 'grain,port',
+                '$order': 'sum(mt) DESC',
+                '$limit': 50
+            }
+            ports_url = 'https://agtransport.usda.gov/resource/sruw-w49i.json?' + urllib.parse.urlencode(ports_params)
+            ports_req = urllib.request.urlopen(ports_url, timeout=10)
+            ports_rows = json.loads(ports_req.read().decode('utf-8'))
+            for pr in ports_rows:
+                g = pr['grain'].lower()
+                ports_by_grain[g].append({
+                    'port': pr.get('port', 'Unknown').title(),
+                    'mt': float(pr.get('sum_mt') or 0),
+                    'kmt': round(float(pr.get('sum_mt') or 0) / 1e3, 1)
+                })
+
+            dest_params = {
+                '$select': 'grain,destination,sum(mt)',
+                '$where': f"grain in ('CORN', 'SOYBEANS', 'WHEAT') and date = '{latest_date}T00:00:00.000'",
+                '$group': 'grain,destination',
+                '$order': 'sum(mt) DESC',
+                '$limit': 60
+            }
+            dest_url = 'https://agtransport.usda.gov/resource/sruw-w49i.json?' + urllib.parse.urlencode(dest_params)
+            dest_req = urllib.request.urlopen(dest_url, timeout=10)
+            dest_rows = json.loads(dest_req.read().decode('utf-8'))
+            for dr in dest_rows:
+                g = dr['grain'].lower()
+                dest_by_grain[g].append({
+                    'destination': dr.get('destination', 'Unknown').title(),
+                    'mt': float(dr.get('sum_mt') or 0),
+                    'kmt': round(float(dr.get('sum_mt') or 0) / 1e3, 1)
+                })
+        except Exception as e:
+            print(f"[WARN] Error fetching ports/destinations for inspections: {e}")
 
     # Fetch multi-year destination comparisons
     dest_comparisons = fetch_inspections_destination_comparisons(raw_by_grain_myear)
+
+    # If WA_GR101 was used to supplement the latest week, inject destinations into 2026-27 comparisons
+    if used_wa_rep and wa_rep.get('destinations'):
+        for g_key in ['corn', 'soybeans', 'wheat']:
+            if g_key in wa_rep['destinations']:
+                for dest, mt in wa_rep['destinations'][g_key].items():
+                    kmt = round(mt / 1e3, 1)
+                    if 'weekly' in dest_comparisons.get(g_key, {}):
+                        dest_comparisons[g_key]['weekly'].setdefault('2026-27', {})[dest] = kmt
+                    if 'mytd' in dest_comparisons.get(g_key, {}):
+                        curr_mytd = dest_comparisons[g_key]['mytd'].setdefault('2026-27', {}).get(dest, 0.0)
+                        dest_comparisons[g_key]['mytd']['2026-27'][dest] = round(curr_mytd + kmt, 1)
 
     # Build curves & summary items
     curves_by_grain = {}
@@ -2205,7 +2335,15 @@ def main():
             if res and res[0].get('max_date'):
                 online_insp_date = res[0]['max_date'][:10]
         except Exception as e:
-            print(f"[WARN] Could not check latest inspections date online: {e}")
+            print(f"[WARN] Could not check latest inspections date from AgTransport: {e}")
+
+        try:
+            wa_rep = fetch_wa_gr101_report()
+            if wa_rep and wa_rep.get('date'):
+                if not online_insp_date or wa_rep['date'] > online_insp_date:
+                    online_insp_date = wa_rep['date']
+        except Exception as e:
+            print(f"[WARN] Could not check USDA AMS WA_GR101 online: {e}")
     print(f"[STATUS] Latest online Inspections cutoff : {online_insp_date or 'Skipped/Unavailable'}")
     is_new_insp_release = bool(online_insp_date and online_insp_date > current_insp_date)
 
