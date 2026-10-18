@@ -595,10 +595,11 @@
         
         <!-- Category & Controls Bar -->
         <div class="flex flex-wrap items-center justify-center lg:justify-end gap-2">
-          <!-- Category Toggles (Total Commitments, Accum Exports, Outstanding Sales, Pacing Pace) -->
+          <!-- Category Toggles (Total Commitments, Accum Exports, Weekly Exports, Outstanding Sales, Pacing Pace) -->
           <div class="inline-flex rounded-lg border border-[var(--border,#cbd5e1)] p-0.5 bg-[var(--secondary,#f1f5f9)] text-xs font-medium">
             <button id="btn-cat-tot" onclick="setChartCategory('tot')" class="category-tab active px-2.5 py-1 rounded">📊 Total Commitments</button>
             <button id="btn-cat-acc" onclick="setChartCategory('acc')" class="category-tab px-2.5 py-1 rounded text-slate-600 hover:text-slate-900">🚢 Accum Exports</button>
+            <button id="btn-cat-exp" onclick="setChartCategory('exp')" class="category-tab px-2.5 py-1 rounded text-slate-600 hover:text-slate-900">📦 Weekly Exports</button>
             <button id="btn-cat-out" onclick="setChartCategory('out')" class="category-tab px-2.5 py-1 rounded text-slate-600 hover:text-slate-900">📝 Outstanding Sales</button>
             <button id="btn-cat-pacing" onclick="setChartCategory('pacing')" class="category-tab px-2.5 py-1 rounded text-amber-700 hover:text-amber-900 font-bold">🎯 USDA Target Pace</button>
           </div>
@@ -887,7 +888,7 @@
 
     let currentCommodity = 'summary'; // Default to 'summary' on load
     let currentUnit = 'kmt'; // 'kmt' or 'mnt'
-    let currentCategory = 'tot'; // 'tot', 'acc', 'out', 'pacing'
+    let currentCategory = 'tot'; // 'tot', 'acc', 'exp', 'out', 'pacing'
     let currentPacingYear = 'nmy_2026_27'; // 'nmy_2026_27' or 'cmy_2025_26'
     let currentDestScope = 'all'; // 'all', 'top10', 'top5', 'custom'
     let showTargetLine = true;
@@ -1238,7 +1239,7 @@
     }
 
     function syncCategoryButtons() {
-      ['tot', 'acc', 'out', 'pacing'].forEach(c => {
+      ['tot', 'acc', 'exp', 'out', 'pacing'].forEach(c => {
         const btn = document.getElementById('btn-cat-' + c);
         if (!btn) return;
         if (c === currentCategory) {
@@ -1339,7 +1340,7 @@
         });
 
         for (let i = 0; i < maxLen; i++) {
-          let sumTot = 0, sumAcc = 0, sumOut = 0, sumNet = 0;
+          let sumTot = 0, sumAcc = 0, sumOut = 0, sumNet = 0, sumExp = 0;
           let sampleDate = '';
 
           selectedDestIds.forEach(did => {
@@ -1350,9 +1351,20 @@
               sumAcc += (p.acc_kmt || 0);
               sumOut += (p.out_kmt || 0);
               sumNet += (p.net_kmt || 0);
+              if (p.exp_kmt !== undefined) {
+                sumExp += p.exp_kmt;
+              } else if (i > 0 && d.curves[y][i - 1]) {
+                sumExp += Math.max(0, (p.acc_kmt || 0) - (d.curves[y][i - 1].acc_kmt || 0));
+              } else {
+                sumExp += (p.acc_kmt || 0);
+              }
               if (!sampleDate) sampleDate = p.date;
             }
           });
+
+          if (!sampleDate && pkg.data && pkg.data['total'] && pkg.data['total'].curves[y] && i < pkg.data['total'].curves[y].length) {
+            sampleDate = pkg.data['total'].curves[y][i].date;
+          }
 
           pts.push({
             date: sampleDate,
@@ -1360,6 +1372,7 @@
             acc_kmt: sumAcc,
             out_kmt: sumOut,
             net_kmt: sumNet,
+            exp_kmt: sumExp,
             kmt: sumTot,
             mnt: sumTot / 1000.0
           });
@@ -1368,12 +1381,24 @@
       });
     }
 
-    function getPointVal(p) {
+    function getPointVal(p, idx, curvePts) {
       if (!p) return 0;
       let valKmt = 0;
-      if (currentCategory === 'acc') valKmt = p.acc_kmt || 0;
-      else if (currentCategory === 'out') valKmt = p.out_kmt || 0;
-      else valKmt = p.tot_kmt || p.kmt || 0;
+      if (currentCategory === 'acc') {
+        valKmt = p.acc_kmt || 0;
+      } else if (currentCategory === 'exp') {
+        if (p.exp_kmt !== undefined) {
+          valKmt = p.exp_kmt;
+        } else if (curvePts && idx !== undefined && idx > 0) {
+          valKmt = Math.max(0, (p.acc_kmt || 0) - (curvePts[idx - 1].acc_kmt || 0));
+        } else {
+          valKmt = p.acc_kmt || 0;
+        }
+      } else if (currentCategory === 'out') {
+        valKmt = p.out_kmt || 0;
+      } else {
+        valKmt = p.tot_kmt || p.kmt || 0;
+      }
       return currentUnit === 'kmt' ? valKmt : (valKmt / 1000.0);
     }
 
@@ -1387,9 +1412,20 @@
       const labelText = document.getElementById('dest-btn-label').textContent;
 
       let catTitle = 'Total Commitments';
-      if (currentCategory === 'acc') catTitle = 'Accumulated Exports (Shipments)';
+      if (currentCategory === 'acc') catTitle = 'Accumulated Exports (Cumulative Shipments)';
+      else if (currentCategory === 'exp') catTitle = 'Weekly Exports (Physical Shipments)';
       else if (currentCategory === 'out') catTitle = 'Outstanding Sales (Unshipped)';
       else if (currentCategory === 'pacing') catTitle = 'USDA Target Pacing Trajectory';
+
+      if (currentCategory === 'exp') {
+        document.getElementById('chart-subtitle').textContent = '11-Year seasonal progression of weekly physical export shipments aligned across marketing years';
+      } else if (currentCategory === 'acc') {
+        document.getElementById('chart-subtitle').textContent = '11-Year seasonal progression of accumulated export shipments aligned across marketing years';
+      } else if (currentCategory === 'out') {
+        document.getElementById('chart-subtitle').textContent = '11-Year seasonal progression of outstanding unshipped export sales aligned across marketing years';
+      } else {
+        document.getElementById('chart-subtitle').textContent = '11-Year seasonal comparison aligned across marketing years with official USDA Target Pacing Trajectory';
+      }
 
       document.getElementById('chart-title').textContent = `US ${pkg.commodity} Export Sales: ${catTitle} &mdash; ${labelText} (${unitLabel})`;
       document.getElementById('page-title').textContent = `US ${pkg.commodity} Export Sales Seasonal Progress & Pacing`;
@@ -1533,8 +1569,8 @@
       ALL_YEARS.forEach(y => {
         if (!YEAR_CONFIG[y].visible) return;
         const pts = aggregatedCurve[y] || [];
-        pts.forEach(p => {
-          const v = getPointVal(p);
+        pts.forEach((p, idx) => {
+          const v = getPointVal(p, idx, pts);
           if (v > maxVal) maxVal = v;
         });
       });
@@ -1718,7 +1754,7 @@
 
         ctx.beginPath();
         pts.forEach((p, idx) => {
-          const v = getPointVal(p);
+          const v = getPointVal(p, idx, pts);
           const x = padding.left + (plotW / (totalPoints - 1)) * idx;
           const yPos = padding.top + plotH - (v / yMax) * plotH;
           if (idx === 0) ctx.moveTo(x, yPos);
@@ -1728,7 +1764,7 @@
 
         const lastPt = pts[pts.length - 1];
         const lastIdx = pts.length - 1;
-        const lastV = getPointVal(lastPt);
+        const lastV = getPointVal(lastPt, lastIdx, pts);
         const lastX = padding.left + (plotW / (totalPoints - 1)) * lastIdx;
         const lastY = padding.top + plotH - (lastV / yMax) * plotH;
 
@@ -1841,7 +1877,7 @@
         const pts = aggregatedCurve[y] || [];
         if (idx < pts.length) {
           hasData = true;
-          const v = getPointVal(pts[idx]);
+          const v = getPointVal(pts[idx], idx, pts);
           rows += `
             <div class="flex items-center justify-between gap-3 text-[11px]">
               <span class="flex items-center gap-1.5">
@@ -2173,6 +2209,7 @@
 
       let catTitle = 'Total Commitments';
       if (currentCategory === 'acc') catTitle = 'Accumulated Exports';
+      else if (currentCategory === 'exp') catTitle = 'Weekly Exports';
       else if (currentCategory === 'out') catTitle = 'Outstanding Sales';
 
       document.getElementById('prog-table-title').textContent = `11-Year ${catTitle} Progression Log (${unitStr})`;
@@ -2196,7 +2233,7 @@
           if (YEAR_CONFIG[y].visible) {
             const pts = aggregatedCurve[y] || [];
             if (i < pts.length) {
-              const v = getPointVal(pts[i]);
+              const v = getPointVal(pts[i], i, pts);
               row += `<td class="py-1.5 px-3 text-right font-medium font-mono">${fmtVal(v, isKmt)}</td>`;
             } else {
               row += `<td class="py-1.5 px-3 text-right text-slate-300 dark:text-slate-700">-</td>`;

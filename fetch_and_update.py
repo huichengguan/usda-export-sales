@@ -282,6 +282,164 @@ def scale_table_rows_proportionally(old_rows, tot_commit, acc_mt, out_mt, tot_ne
     return new_rows
 
 
+def update_grain_destination_curves(comm_key, pkg, active_year, new_date, recs, tot_commit, tot_acc, tot_out, tot_net_cmy):
+    """Updates curves for all destinations (total, china, unknown, ex_china_unk, and individual countries)
+    for the active marketing year using official Socrata records."""
+    cdata = pkg.get('data', {})
+    if not cdata:
+        return
+
+    def normalize_name(n):
+        return n.upper().replace(',', '').replace('.', '').replace('-', ' ').replace("'", '').strip()
+
+    c_agg = defaultdict(lambda: {'tot': 0.0, 'acc': 0.0, 'out': 0.0, 'net': 0.0})
+    for r in recs:
+        c = r.get('country', '').strip()
+        c_agg[c]['tot'] += float(r.get('totcommcmy') or 0)
+        c_agg[c]['acc'] += float(r.get('accexportscmy') or 0)
+        c_agg[c]['out'] += float(r.get('outsalescmy') or 0)
+        c_agg[c]['net'] += float(r.get('netsalescmy') or 0)
+
+    # 1. Total curve
+    tot_kmt = round(tot_commit / 1e3, 1)
+    acc_kmt = round(tot_acc / 1e3, 1)
+    out_kmt = round(tot_out / 1e3, 1)
+    net_kmt = round(tot_net_cmy / 1e3, 1)
+    if 'total' in cdata and active_year in cdata['total']['curves']:
+        pts = cdata['total']['curves'][active_year]
+        existing = next((p for p in pts if p.get('date') == new_date), None)
+        prev_acc = pts[-1].get('acc_kmt', 0.0) if pts else 0.0
+        pt = {
+            'date': new_date,
+            'tot_kmt': tot_kmt,
+            'acc_kmt': acc_kmt,
+            'out_kmt': out_kmt,
+            'net_kmt': net_kmt,
+            'exp_kmt': round(max(0.0, acc_kmt - prev_acc), 1),
+            'kmt': tot_kmt,
+            'mnt': round(tot_kmt / 1e3, 4)
+        }
+        if existing:
+            existing.update(pt)
+        else:
+            pts.append(pt)
+
+    # 2. China
+    ch_rec = next((v for c, v in c_agg.items() if 'CHINA' in c.upper() and 'TAIWAN' not in c.upper() and 'HONG' not in c.upper()), None) or {'tot': 0.0, 'acc': 0.0, 'out': 0.0, 'net': 0.0}
+    ch_tot = round(ch_rec['tot'] / 1e3, 1)
+    ch_acc = round(ch_rec['acc'] / 1e3, 1)
+    ch_out = round(ch_rec['out'] / 1e3, 1)
+    ch_net = round(ch_rec['net'] / 1e3, 1)
+    if 'china' in cdata and active_year in cdata['china']['curves']:
+        pts = cdata['china']['curves'][active_year]
+        existing = next((p for p in pts if p.get('date') == new_date), None)
+        prev_acc = pts[-1].get('acc_kmt', 0.0) if pts else 0.0
+        pt = {
+            'date': new_date,
+            'tot_kmt': ch_tot,
+            'acc_kmt': ch_acc,
+            'out_kmt': ch_out,
+            'net_kmt': ch_net,
+            'exp_kmt': round(max(0.0, ch_acc - prev_acc), 1),
+            'kmt': ch_tot,
+            'mnt': round(ch_tot / 1e3, 4)
+        }
+        if existing:
+            existing.update(pt)
+        else:
+            pts.append(pt)
+
+    # 3. Unknown
+    unk_rec = next((v for c, v in c_agg.items() if 'UNKNOWN' in c.upper()), None) or {'tot': 0.0, 'acc': 0.0, 'out': 0.0, 'net': 0.0}
+    unk_tot = round(unk_rec['tot'] / 1e3, 1)
+    unk_acc = round(unk_rec['acc'] / 1e3, 1)
+    unk_out = round(unk_rec['out'] / 1e3, 1)
+    unk_net = round(unk_rec['net'] / 1e3, 1)
+    if 'unknown' in cdata and active_year in cdata['unknown']['curves']:
+        pts = cdata['unknown']['curves'][active_year]
+        existing = next((p for p in pts if p.get('date') == new_date), None)
+        prev_acc = pts[-1].get('acc_kmt', 0.0) if pts else 0.0
+        pt = {
+            'date': new_date,
+            'tot_kmt': unk_tot,
+            'acc_kmt': unk_acc,
+            'out_kmt': unk_out,
+            'net_kmt': unk_net,
+            'exp_kmt': round(max(0.0, unk_acc - prev_acc), 1),
+            'kmt': unk_tot,
+            'mnt': round(unk_tot / 1e3, 4)
+        }
+        if existing:
+            existing.update(pt)
+        else:
+            pts.append(pt)
+
+    # 4. Ex China & Unknown
+    ex_tot = round(tot_kmt - ch_tot - unk_tot, 1)
+    ex_acc = round(acc_kmt - ch_acc - unk_acc, 1)
+    ex_out = round(out_kmt - ch_out - unk_out, 1)
+    ex_net = round(net_kmt - ch_net - unk_net, 1)
+    if 'ex_china_unk' in cdata and active_year in cdata['ex_china_unk']['curves']:
+        pts = cdata['ex_china_unk']['curves'][active_year]
+        existing = next((p for p in pts if p.get('date') == new_date), None)
+        prev_acc = pts[-1].get('acc_kmt', 0.0) if pts else 0.0
+        pt = {
+            'date': new_date,
+            'tot_kmt': ex_tot,
+            'acc_kmt': ex_acc,
+            'out_kmt': ex_out,
+            'net_kmt': ex_net,
+            'exp_kmt': round(max(0.0, ex_acc - prev_acc), 1),
+            'kmt': ex_tot,
+            'mnt': round(ex_tot / 1e3, 4)
+        }
+        if existing:
+            existing.update(pt)
+        else:
+            pts.append(pt)
+
+    # 5. Individual country destinations
+    for dest in pkg.get('destinations', []):
+        did = dest['id']
+        if did in ('total', 'china', 'unknown', 'ex_china_unk'):
+            continue
+        if did not in cdata or active_year not in cdata[did]['curves']:
+            continue
+
+        dname = dest['name']
+        norm_dname = normalize_name(dname)
+        val = next((v for c, v in c_agg.items() if normalize_name(c) == norm_dname), None)
+        if not val:
+            for c, v in c_agg.items():
+                norm_c = normalize_name(c)
+                if norm_dname in norm_c or norm_c in norm_dname:
+                    val = v
+                    break
+
+        c_tot = round((val['tot'] / 1e3), 1) if val else 0.0
+        c_acc = round((val['acc'] / 1e3), 1) if val else 0.0
+        c_out = round((val['out'] / 1e3), 1) if val else 0.0
+        c_net = round((val['net'] / 1e3), 1) if val else 0.0
+
+        pts = cdata[did]['curves'][active_year]
+        existing = next((p for p in pts if p.get('date') == new_date), None)
+        prev_acc = pts[-1].get('acc_kmt', 0.0) if pts else 0.0
+        pt = {
+            'date': new_date,
+            'tot_kmt': c_tot,
+            'acc_kmt': c_acc,
+            'out_kmt': c_out,
+            'net_kmt': c_net,
+            'exp_kmt': round(max(0.0, c_acc - prev_acc), 1),
+            'kmt': c_tot,
+            'mnt': round(c_tot / 1e3, 4)
+        }
+        if existing:
+            existing.update(pt)
+        else:
+            pts.append(pt)
+
+
 def update_grain_commodity(comm_key, comm_name, new_date, payload):
     """Updates Corn, Soybeans, or Wheat for the new week."""
     target_myear = get_active_myear(comm_key, new_date)
@@ -320,14 +478,17 @@ def update_grain_commodity(comm_key, comm_name, new_date, payload):
         if active_year in total_curves:
             pts = total_curves[active_year]
             existing = next((p for p in pts if p.get('date') == new_date), None)
+            prev_acc = pts[-1].get('acc_kmt', 0.0) if pts else 0.0
+            acc_val = round(acc_mt / 1e3, 1)
             new_pt = {
                 'date': new_date,
                 'mnt': round(tot_commit / 1e6, 4),
                 'kmt': round(tot_commit / 1e3, 1),
                 'tot_kmt': round(tot_commit / 1e3, 1),
-                'acc_kmt': round(acc_mt / 1e3, 1),
+                'acc_kmt': acc_val,
                 'out_kmt': round(out_mt / 1e3, 1),
-                'net_kmt': round(tot_net_cmy / 1e3, 1)
+                'net_kmt': round(tot_net_cmy / 1e3, 1),
+                'exp_kmt': round(max(0.0, acc_val - prev_acc), 1)
             }
             if existing:
                 existing.update(new_pt)
@@ -455,25 +616,9 @@ def update_grain_commodity(comm_key, comm_name, new_date, payload):
     pkg['table_8rows'] = new_rows
     pkg['latest_date'] = new_date
 
-    # Append to total curve for active year
+    # Update destination curves for active year across all destinations
     active_year = '2026-27' if comm_key == 'wheat' or new_date >= '2026-09-01' else '2025-26'
-    total_curves = pkg['data']['total']['curves']
-    if active_year in total_curves:
-        pts = total_curves[active_year]
-        existing = next((p for p in pts if p.get('date') == new_date), None)
-        new_pt = {
-            'date': new_date,
-            'mnt': round(tot_commit / 1e6, 4),
-            'kmt': round(tot_commit / 1e3, 1),
-            'tot_kmt': round(tot_commit / 1e3, 1),
-            'acc_kmt': round(tot_acc / 1e3, 1),
-            'out_kmt': round(tot_out / 1e3, 1),
-            'net_kmt': round(tot_net_cmy / 1e3, 1)
-        }
-        if existing:
-            existing.update(new_pt)
-        else:
-            pts.append(new_pt)
+    update_grain_destination_curves(comm_key, pkg, active_year, new_date, recs, tot_commit, tot_acc, tot_out, tot_net_cmy)
 
     print(f"[SUCCESS] Updated {comm_name} with release {new_date}: Total Commit = {tot_commit/1e3:,.1f} k MT")
 
@@ -658,14 +803,17 @@ def update_processed_commodity(comm_key, cid, comm_name, new_date, payload):
     if 'total' in cdata and active_year in cdata['total']['curves']:
         pts = cdata['total']['curves'][active_year]
         existing = next((p for p in pts if p.get('date') == new_date), None)
+        prev_acc = pts[-1].get('acc_kmt', 0.0) if pts else 0.0
+        acc_val = round(acc_cmy / 1e3, 1)
         new_pt = {
             'date': new_date,
             'mnt': round(tot_cmy / 1e6, 4),
             'kmt': round(tot_cmy / 1e3, 1),
             'tot_kmt': round(tot_cmy / 1e3, 1),
-            'acc_kmt': round(acc_cmy / 1e3, 1),
+            'acc_kmt': acc_val,
             'out_kmt': round(out_cmy / 1e3, 1),
-            'net_kmt': round(net_cmy / 1e3, 1)
+            'net_kmt': round(net_cmy / 1e3, 1),
+            'exp_kmt': round(max(0.0, acc_val - prev_acc), 1)
         }
         if existing:
             existing.update(new_pt)
@@ -684,12 +832,14 @@ def update_processed_commodity(comm_key, cid, comm_name, new_date, payload):
             d_net = r.get('currentMYNetSales', 0) / 1e3
             d_pts = cdata[ckey]['curves'][active_year]
             existing_d = next((p for p in d_pts if p.get('date') == new_date), None)
+            prev_acc_d = d_pts[-1].get('acc_kmt', 0.0) if d_pts else 0.0
             new_d_pt = {
                 'date': new_date,
                 'tot_kmt': round(d_tot, 1),
                 'acc_kmt': round(d_acc, 1),
                 'out_kmt': round(d_out, 1),
                 'net_kmt': round(d_net, 1),
+                'exp_kmt': round(max(0.0, d_acc - prev_acc_d), 1),
                 'kmt': round(d_tot, 1),
                 'mnt': round(d_tot / 1e3, 4)
             }
@@ -701,12 +851,15 @@ def update_processed_commodity(comm_key, cid, comm_name, new_date, payload):
     if 'unknown' in cdata and active_year in cdata['unknown']['curves']:
         u_pts = cdata['unknown']['curves'][active_year]
         existing_u = next((p for p in u_pts if p.get('date') == new_date), None)
+        prev_acc_u = u_pts[-1].get('acc_kmt', 0.0) if u_pts else 0.0
+        u_acc_val = round(u_acc / 1e3, 1)
         new_u_pt = {
             'date': new_date,
             'tot_kmt': round(u_tot / 1e3, 1),
-            'acc_kmt': round(u_acc / 1e3, 1),
+            'acc_kmt': u_acc_val,
             'out_kmt': round(u_out / 1e3, 1),
             'net_kmt': round(u_net / 1e3, 1),
+            'exp_kmt': round(max(0.0, u_acc_val - prev_acc_u), 1),
             'kmt': round(u_tot / 1e3, 1),
             'mnt': round(u_tot / 1e6, 4)
         }
