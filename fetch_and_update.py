@@ -1841,6 +1841,64 @@ def build_export_inspections_data(payload):
         except Exception as e:
             print(f"[WARN] Error fetching ports/destinations for inspections: {e}")
 
+    # Fetch prior year same week ports from AgTransport to show YoY comparisons
+    ly_ports_by_grain = defaultdict(dict)
+    try:
+        ly_dates_set = set()
+        for g_up in ['CORN', 'SOYBEANS', 'WHEAT']:
+            c_len = len(raw_by_grain_myear[g_up].get('2026-27', []))
+            ly_wks = raw_by_grain_myear[g_up].get('2025-26', [])
+            if len(ly_wks) >= c_len and c_len > 0:
+                ly_dates_set.add(ly_wks[c_len - 1]['date'])
+            elif ly_wks:
+                ly_dates_set.add(ly_wks[-1]['date'])
+
+        if ly_dates_set:
+            ly_dates_str = ', '.join([f"'{d}T00:00:00.000'" for d in sorted(ly_dates_set)])
+            ly_ports_params = {
+                '$select': 'date,grain,port,sum(mt)',
+                '$where': f"grain in ('CORN', 'SOYBEANS', 'WHEAT') and date in ({ly_dates_str})",
+                '$group': 'date,grain,port'
+            }
+            ly_p_url = 'https://agtransport.usda.gov/resource/sruw-w49i.json?' + urllib.parse.urlencode(ly_ports_params)
+            ly_p_req = urllib.request.Request(ly_p_url, headers={'User-Agent': 'Mozilla/5.0'})
+            with urllib.request.urlopen(ly_p_req, timeout=12) as resp:
+                ly_p_rows = json.loads(resp.read().decode('utf-8'))
+                for r in ly_p_rows:
+                    g = r['grain'].lower()
+                    p = r.get('port', 'Unknown').title()
+                    if p in ('Interior', 'Interior Interior'): p = 'Interior'
+                    mt = float(r.get('sum_mt') or 0)
+                    ly_ports_by_grain[g][p] = round(mt / 1e3, 1)
+    except Exception as e:
+        print(f"[WARN] Error fetching prior year same week ports: {e}")
+
+    # Build merged ports list with prior year same week, variance and % change
+    ports_comparison_by_grain = defaultdict(list)
+    for g in ['corn', 'soybeans', 'wheat']:
+        curr_map = {p['port']: p['kmt'] for p in ports_by_grain.get(g, [])}
+        ly_map = ly_ports_by_grain.get(g, {})
+        all_port_names = sorted(list(set(curr_map.keys()) | set(ly_map.keys())))
+
+        merged_ports = []
+        for p in all_port_names:
+            c_v = curr_map.get(p, 0.0)
+            l_v = ly_map.get(p, 0.0)
+            diff = round(c_v - l_v, 1)
+            pct = round((diff / l_v) * 100.0, 1) if l_v > 0 else (100.0 if c_v > 0 else 0.0)
+            merged_ports.append({
+                'port': p,
+                'kmt': c_v,
+                'ly_kmt': l_v,
+                'diff_kmt': diff,
+                'yoy_pct': pct if l_v > 0 else None,
+                'pct_str': f"{pct:+.1f}%" if l_v > 0 else ("New" if c_v > 0 else "—")
+            })
+
+        # Sort: active current ports by volume desc, then former ports by ly volume desc
+        merged_ports.sort(key=lambda x: (x['kmt'] > 0, x['kmt'] if x['kmt'] > 0 else x['ly_kmt']), reverse=True)
+        ports_comparison_by_grain[g] = merged_ports
+
     # Fetch multi-year destination comparisons
     dest_comparisons = fetch_inspections_destination_comparisons(raw_by_grain_myear)
 
@@ -2053,7 +2111,7 @@ def build_export_inspections_data(payload):
         },
         'summary_table': summary_items,
         'totals': totals,
-        'ports': dict(ports_by_grain),
+        'ports': dict(ports_comparison_by_grain),
         'destinations': dict(dest_by_grain),
         'destinations_comparison': dest_comparisons,
         'curves': curves_by_grain
