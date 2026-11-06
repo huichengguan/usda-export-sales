@@ -952,35 +952,199 @@ def build_thursday_same_week_totals(payload, n_years=5):
 
 
 TRADE_EXPECTATIONS_DATABASE = {
-    '2026-09-24': {
-        'corn': {'low_kmt': 800.0, 'high_kmt': 1500.0, 'source': 'Reuters / Trade Survey'},
-        'soybeans': {'low_kmt': 700.0, 'high_kmt': 1400.0, 'source': 'Reuters / Trade Survey'},
+    '2026-10-29': {
+        'wheat': {'low_kmt': 300.0, 'high_kmt': 650.0, 'source': 'Reuters / Trade Survey'},
+        'corn': {'low_kmt': 800.0, 'high_kmt': 1800.0, 'source': 'Reuters / Trade Survey'},
+        'soybeans': {'low_kmt': 950.0, 'high_kmt': 2500.0, 'source': 'Reuters / Trade Survey'},
+        'meal': {'low_kmt': 250.0, 'high_kmt': 500.0, 'source': 'Reuters / Trade Survey'},
+        'oil': {'low_kmt': 0.0, 'high_kmt': 10.0, 'source': 'Reuters / Trade Survey'}
+    },
+    '2026-10-22': {
+        'wheat': {'low_kmt': 200.0, 'high_kmt': 500.0, 'source': 'Reuters / Trade Survey'},
+        'corn': {'low_kmt': 800.0, 'high_kmt': 1600.0, 'source': 'Reuters / Trade Survey'},
+        'soybeans': {'low_kmt': 1800.0, 'high_kmt': 3000.0, 'source': 'Reuters / Trade Survey'},
+        'meal': {'low_kmt': 200.0, 'high_kmt': 450.0, 'source': 'Reuters / Trade Survey'},
+        'oil': {'low_kmt': 0.0, 'high_kmt': 10.0, 'source': 'Reuters / Trade Survey'}
+    },
+    '2026-10-15': {
         'wheat': {'low_kmt': 250.0, 'high_kmt': 550.0, 'source': 'Reuters / Trade Survey'},
-        'meal': {'low_kmt': 50.0, 'high_kmt': 250.0, 'source': 'Reuters / Trade Survey'},
-        'oil': {'low_kmt': 0.0, 'high_kmt': 25.0, 'source': 'Reuters / Trade Survey'},
+        'corn': {'low_kmt': 700.0, 'high_kmt': 1500.0, 'source': 'Reuters / Trade Survey'},
+        'soybeans': {'low_kmt': 1800.0, 'high_kmt': 3000.0, 'source': 'Reuters / Trade Survey'},
+        'meal': {'low_kmt': 250.0, 'high_kmt': 650.0, 'source': 'Reuters / Trade Survey'},
+        'oil': {'low_kmt': 0.0, 'high_kmt': 10.0, 'source': 'Reuters / Trade Survey'}
+    },
+    '2026-10-08': {
+        'wheat': {'low_kmt': 300.0, 'high_kmt': 600.0, 'source': 'Reuters / Trade Survey'},
+        'corn': {'low_kmt': 500.0, 'high_kmt': 1200.0, 'source': 'Reuters / Trade Survey'},
+        'soybeans': {'low_kmt': 500.0, 'high_kmt': 1200.0, 'source': 'Reuters / Trade Survey'},
+        'meal': {'low_kmt': 200.0, 'high_kmt': 600.0, 'source': 'Reuters / Trade Survey'},
+        'oil': {'low_kmt': 0.0, 'high_kmt': 10.0, 'source': 'Reuters / Trade Survey'}
+    },
+    '2026-10-01': {
+        'wheat': {'low_kmt': 200.0, 'high_kmt': 500.0, 'source': 'Reuters / Trade Survey'},
+        'corn': {'low_kmt': 600.0, 'high_kmt': 1700.0, 'source': 'Reuters / Trade Survey'},
+        'soybeans': {'low_kmt': 450.0, 'high_kmt': 1200.0, 'source': 'Reuters / Trade Survey'},
+        'meal': {'low_kmt': 150.0, 'high_kmt': 300.0, 'source': 'Reuters / Trade Survey'},
+        'oil': {'low_kmt': 0.0, 'high_kmt': 3.0, 'source': 'Reuters / Trade Survey'}
+    },
+    '2026-09-24': {
+        'wheat': {'low_kmt': 250.0, 'high_kmt': 450.0, 'source': 'Reuters / Trade Survey'},
+        'corn': {'low_kmt': 500.0, 'high_kmt': 1300.0, 'source': 'Reuters / Trade Survey'},
+        'soybeans': {'low_kmt': 850.0, 'high_kmt': 1000.0, 'source': 'Reuters / Trade Survey'},
+        'meal': {'low_kmt': 100.0, 'high_kmt': 450.0, 'source': 'Reuters / Trade Survey'},
+        'oil': {'low_kmt': -5.0, 'high_kmt': 0.0, 'source': 'Reuters / Trade Survey'}
     },
     '2026-09-17': {
-        'corn': {'low_kmt': 600.0, 'high_kmt': 1200.0, 'source': 'Reuters / Trade Survey'},
-        'soybeans': {'low_kmt': 400.0, 'high_kmt': 900.0, 'source': 'Reuters / Trade Survey'},
-        'wheat': {'low_kmt': 250.0, 'high_kmt': 550.0, 'source': 'Reuters / Trade Survey'},
-        'meal': {'low_kmt': 50.0, 'high_kmt': 200.0, 'source': 'Reuters / Trade Survey'},
-        'oil': {'low_kmt': 0.0, 'high_kmt': 25.0, 'source': 'Reuters / Trade Survey'},
+        'wheat': {'low_kmt': 350.0, 'high_kmt': 600.0, 'source': 'Reuters / Trade Survey'},
+        'corn': {'low_kmt': 800.0, 'high_kmt': 1400.0, 'source': 'Reuters / Trade Survey'},
+        'soybeans': {'low_kmt': 1500.0, 'high_kmt': 2000.0, 'source': 'Reuters / Trade Survey'},
+        'meal': {'low_kmt': 250.0, 'high_kmt': 300.0, 'source': 'Reuters / Trade Survey'},
+        'oil': {'low_kmt': 1.5, 'high_kmt': 4.5, 'source': 'Reuters / Trade Survey'}
     },
     '2026-09-10': {
-        'corn': {'low_kmt': 700.0, 'high_kmt': 1300.0, 'source': 'Reuters / Trade Survey'},
-        'soybeans': {'low_kmt': 600.0, 'high_kmt': 1200.0, 'source': 'Reuters / Trade Survey'},
-        'wheat': {'low_kmt': 300.0, 'high_kmt': 600.0, 'source': 'Reuters / Trade Survey'},
-        'meal': {'low_kmt': 50.0, 'high_kmt': 200.0, 'source': 'Reuters / Trade Survey'},
-        'oil': {'low_kmt': 0.0, 'high_kmt': 25.0, 'source': 'Reuters / Trade Survey'},
+        'wheat': {'low_kmt': 150.0, 'high_kmt': 500.0, 'source': 'Reuters / Trade Survey'},
+        'corn': {'low_kmt': 700.0, 'high_kmt': 2000.0, 'source': 'Reuters / Trade Survey'},
+        'soybeans': {'low_kmt': 900.0, 'high_kmt': 2400.0, 'source': 'Reuters / Trade Survey'},
+        'meal': {'low_kmt': 150.0, 'high_kmt': 500.0, 'source': 'Reuters / Trade Survey'},
+        'oil': {'low_kmt': -5.0, 'high_kmt': 5.0, 'source': 'Reuters / Trade Survey'}
     },
     '2026-09-03': {
-        'corn': {'low_kmt': 700.0, 'high_kmt': 1400.0, 'source': 'Reuters / Trade Survey'},
-        'soybeans': {'low_kmt': 1000.0, 'high_kmt': 2000.0, 'source': 'Reuters / Trade Survey'},
-        'wheat': {'low_kmt': 300.0, 'high_kmt': 600.0, 'source': 'Reuters / Trade Survey'},
-        'meal': {'low_kmt': 75.0, 'high_kmt': 250.0, 'source': 'Reuters / Trade Survey'},
-        'oil': {'low_kmt': 0.0, 'high_kmt': 20.0, 'source': 'Reuters / Trade Survey'},
+        'wheat': {'low_kmt': 250.0, 'high_kmt': 500.0, 'source': 'Reuters / Trade Survey'},
+        'corn': {'low_kmt': 1000.0, 'high_kmt': 1900.0, 'source': 'Reuters / Trade Survey'},
+        'soybeans': {'low_kmt': 1000.0, 'high_kmt': 2600.0, 'source': 'Reuters / Trade Survey'},
+        'meal': {'low_kmt': 150.0, 'high_kmt': 650.0, 'source': 'Reuters / Trade Survey'},
+        'oil': {'low_kmt': 0.0, 'high_kmt': 6.0, 'source': 'Reuters / Trade Survey'}
     }
 }
+
+
+def _parse_reuters_val(s):
+    s = s.strip()
+    if not s or s.upper() == 'N/A':
+        return 0.0
+    is_neg = False
+    if s.startswith('(') and s.endswith(')'):
+        is_neg = True
+        s = s[1:-1]
+    v = float(s.replace(',', ''))
+    return -v if is_neg else v
+
+
+def _parse_reuters_range(s):
+    s = s.strip()
+    if not s or s.upper() == 'N/A':
+        return None
+    m = re.match(r'^(\(?[\d,]+\)?)\s*-\s*(\(?[\d,]+\)?)$', s)
+    if m:
+        low = _parse_reuters_val(m.group(1)) / 1e3
+        high = _parse_reuters_val(m.group(2)) / 1e3
+        return low, high
+    v = _parse_reuters_val(s) / 1e3
+    return v, v
+
+
+def parse_reuters_export_sales_survey(text):
+    """Parses a Reuters weekly grain/soy export sales survey table story into (date_str, estimates_dict)."""
+    m_date = re.search(r'week\s+ended(?: on)?\s+([A-Za-z.]+)\s+(\d{1,2})', text, re.IGNORECASE)
+    if not m_date:
+        return None, {}
+
+    month_str = m_date.group(1).replace('.', '')
+    day_str = m_date.group(2)
+    dt = None
+    for fmt in ["%Y %B %d", "%Y %b %d"]:
+        try:
+            dt = datetime.strptime(f"2026 {month_str} {day_str}", fmt)
+            break
+        except Exception:
+            pass
+    if not dt:
+        return None, {}
+    release_date = dt.strftime("%Y-%m-%d")
+
+    lines = text.split('\n')
+    estimates = {}
+    table_lines = []
+    in_estimates_section = False
+    for line in lines:
+        if 'Trade estimates for' in line:
+            in_estimates_section = True
+            continue
+        if 'USDA week-ago' in line:
+            break
+        if in_estimates_section:
+            table_lines.append(line)
+
+    target_col = 0
+    for line in table_lines:
+        if '2026-27' in line:
+            parts = line.split()
+            if len(parts) >= 2 and parts[-1] == '2026-27':
+                target_col = 1
+            break
+
+    comm_map = [
+        ('wheat', 'wheat'),
+        ('corn', 'corn'),
+        ('soybeans', 'soybeans'),
+        ('soymeal', 'meal'),
+        ('soyoil', 'oil')
+    ]
+
+    for line in table_lines:
+        line_clean = line.strip()
+        for prefix, ckey in comm_map:
+            if line_clean.lower().startswith(prefix):
+                rest = line_clean[len(prefix):].strip()
+                tokens = rest.split()
+                if not tokens:
+                    continue
+                val_token = tokens[1] if (target_col == 1 and len(tokens) >= 2) else tokens[0]
+                r = _parse_reuters_range(val_token)
+                if r:
+                    estimates[ckey] = {
+                        'low_kmt': r[0],
+                        'high_kmt': r[1],
+                        'source': 'Reuters / Trade Survey'
+                    }
+                break
+
+    return release_date, estimates
+
+
+def fetch_lseg_trade_expectations(count=15):
+    """
+    Connects to active LSEG Workspace desktop session via lseg.data,
+    retrieves the latest Reuters pre-report export sales survey tables,
+    and returns a dict of { 'YYYY-MM-DD': { 'corn': {...}, ... } }.
+    """
+    surveys = {}
+    try:
+        import lseg.data as ld
+        from lseg.data.content import news
+        ld.open_session()
+        query = '"TABLE-Trade estimates for USDA weekly grain, soy export sales"'
+        resp = news.headlines.Definition(query=query, count=count).get_data()
+        df = resp.data.df if resp and resp.data else None
+        if df is not None and not df.empty:
+            for idx, row in df.iterrows():
+                story_id = row.get('storyId')
+                if not story_id:
+                    continue
+                try:
+                    s_resp = news.story.Definition(story_id=story_id).get_data()
+                    text = s_resp.data.story.content.text
+                    date_key, est = parse_reuters_export_sales_survey(text)
+                    if date_key and est and date_key not in surveys:
+                        surveys[date_key] = est
+                except Exception as e:
+                    print(f"[WARN] Error parsing LSEG story {story_id}: {e}")
+        ld.close_session()
+        if surveys:
+            print(f"[SUCCESS] LSEG API: Retrieved and parsed {len(surveys)} weekly Reuters trade surveys.")
+    except Exception as e:
+        print(f"[INFO] LSEG Workspace API not accessible or offline: {e}. Using cached/fallback survey database.")
+    return surveys
 
 DEFAULT_COMMODITY_TRADE_RANGES = {
     'corn': (600.0, 1200.0),
@@ -991,24 +1155,74 @@ DEFAULT_COMMODITY_TRADE_RANGES = {
 }
 
 INSPECTIONS_EXPECTATIONS_DATABASE = {
-    '2026-10-08': {
-        'corn': {'low_kmt': 1000.0, 'high_kmt': 1500.0, 'source': 'Reuters / Trade Survey'},
-        'soybeans': {'low_kmt': 800.0, 'high_kmt': 1400.0, 'source': 'Reuters / Trade Survey'},
-        'wheat': {'low_kmt': 250.0, 'high_kmt': 500.0, 'source': 'Reuters / Trade Survey'}
+    '2026-11-02': {
+        'corn': {'low_kmt': 600.0, 'high_kmt': 1200.0, 'source': 'Reuters / Trade Survey'},
+        'soybeans': {'low_kmt': 1400.0, 'high_kmt': 2700.0, 'source': 'Reuters / Trade Survey'},
+        'wheat': {'low_kmt': 150.0, 'high_kmt': 350.0, 'source': 'Reuters / Trade Survey'}
     },
-    '2026-10-01': {
-        'corn': {'low_kmt': 1100.0, 'high_kmt': 1500.0, 'source': 'Reuters / Trade Survey'},
-        'soybeans': {'low_kmt': 900.0, 'high_kmt': 1400.0, 'source': 'Reuters / Trade Survey'},
-        'wheat': {'low_kmt': 250.0, 'high_kmt': 500.0, 'source': 'Reuters / Trade Survey'}
+    '2026-10-29': {
+        'corn': {'low_kmt': 600.0, 'high_kmt': 1200.0, 'source': 'Reuters / Trade Survey'},
+        'soybeans': {'low_kmt': 1400.0, 'high_kmt': 2700.0, 'source': 'Reuters / Trade Survey'},
+        'wheat': {'low_kmt': 150.0, 'high_kmt': 350.0, 'source': 'Reuters / Trade Survey'}
     },
-    '2026-09-24': {
-        'corn': {'low_kmt': 1100.0, 'high_kmt': 1600.0, 'source': 'Reuters / Trade Survey'},
-        'soybeans': {'low_kmt': 600.0, 'high_kmt': 1100.0, 'source': 'Reuters / Trade Survey'},
+    '2026-10-26': {
+        'corn': {'low_kmt': 600.0, 'high_kmt': 850.0, 'source': 'Reuters / Trade Survey'},
+        'soybeans': {'low_kmt': 1500.0, 'high_kmt': 2050.0, 'source': 'Reuters / Trade Survey'},
+        'wheat': {'low_kmt': 200.0, 'high_kmt': 350.0, 'source': 'Reuters / Trade Survey'}
+    },
+    '2026-10-22': {
+        'corn': {'low_kmt': 600.0, 'high_kmt': 850.0, 'source': 'Reuters / Trade Survey'},
+        'soybeans': {'low_kmt': 1500.0, 'high_kmt': 2050.0, 'source': 'Reuters / Trade Survey'},
+        'wheat': {'low_kmt': 200.0, 'high_kmt': 350.0, 'source': 'Reuters / Trade Survey'}
+    },
+    '2026-10-19': {
+        'corn': {'low_kmt': 1100.0, 'high_kmt': 1350.0, 'source': 'Reuters / Trade Survey'},
+        'soybeans': {'low_kmt': 1200.0, 'high_kmt': 1600.0, 'source': 'Reuters / Trade Survey'},
+        'wheat': {'low_kmt': 300.0, 'high_kmt': 400.0, 'source': 'Reuters / Trade Survey'}
+    },
+    '2026-10-15': {
+        'corn': {'low_kmt': 1100.0, 'high_kmt': 1350.0, 'source': 'Reuters / Trade Survey'},
+        'soybeans': {'low_kmt': 1200.0, 'high_kmt': 1600.0, 'source': 'Reuters / Trade Survey'},
+        'wheat': {'low_kmt': 300.0, 'high_kmt': 400.0, 'source': 'Reuters / Trade Survey'}
+    },
+    '2026-10-13': {
+        'corn': {'low_kmt': 1100.0, 'high_kmt': 1400.0, 'source': 'Reuters / Trade Survey'},
+        'soybeans': {'low_kmt': 1200.0, 'high_kmt': 1500.0, 'source': 'Reuters / Trade Survey'},
         'wheat': {'low_kmt': 250.0, 'high_kmt': 450.0, 'source': 'Reuters / Trade Survey'}
     },
+    '2026-10-08': {
+        'corn': {'low_kmt': 1100.0, 'high_kmt': 1400.0, 'source': 'Reuters / Trade Survey'},
+        'soybeans': {'low_kmt': 1200.0, 'high_kmt': 1500.0, 'source': 'Reuters / Trade Survey'},
+        'wheat': {'low_kmt': 250.0, 'high_kmt': 450.0, 'source': 'Reuters / Trade Survey'}
+    },
+    '2026-10-05': {
+        'corn': {'low_kmt': 1250.0, 'high_kmt': 1500.0, 'source': 'Reuters / Trade Survey'},
+        'soybeans': {'low_kmt': 1000.0, 'high_kmt': 1440.0, 'source': 'Reuters / Trade Survey'},
+        'wheat': {'low_kmt': 200.0, 'high_kmt': 300.0, 'source': 'Reuters / Trade Survey'}
+    },
+    '2026-10-01': {
+        'corn': {'low_kmt': 1250.0, 'high_kmt': 1500.0, 'source': 'Reuters / Trade Survey'},
+        'soybeans': {'low_kmt': 1000.0, 'high_kmt': 1440.0, 'source': 'Reuters / Trade Survey'},
+        'wheat': {'low_kmt': 200.0, 'high_kmt': 300.0, 'source': 'Reuters / Trade Survey'}
+    },
+    '2026-09-28': {
+        'corn': {'low_kmt': 1250.0, 'high_kmt': 1600.0, 'source': 'Reuters / Trade Survey'},
+        'soybeans': {'low_kmt': 600.0, 'high_kmt': 900.0, 'source': 'Reuters / Trade Survey'},
+        'wheat': {'low_kmt': 200.0, 'high_kmt': 400.0, 'source': 'Reuters / Trade Survey'}
+    },
+    '2026-09-24': {
+        'corn': {'low_kmt': 1250.0, 'high_kmt': 1600.0, 'source': 'Reuters / Trade Survey'},
+        'soybeans': {'low_kmt': 600.0, 'high_kmt': 900.0, 'source': 'Reuters / Trade Survey'},
+        'wheat': {'low_kmt': 200.0, 'high_kmt': 400.0, 'source': 'Reuters / Trade Survey'}
+    },
+    '2026-09-21': {
+        'corn': {'low_kmt': 1200.0, 'high_kmt': 1850.0, 'source': 'Reuters / Trade Survey'},
+        'soybeans': {'low_kmt': 300.0, 'high_kmt': 750.0, 'source': 'Reuters / Trade Survey'},
+        'wheat': {'low_kmt': 300.0, 'high_kmt': 500.0, 'source': 'Reuters / Trade Survey'}
+    },
     '2026-09-17': {
-        'corn': {'low_kmt': 1200.0, 'high_kmt': 1700.0, 'source': 'Reuters / Trade Survey'},
-        'soybeans': {'low_kmt': 500.0, 'high_kmt': 900.0, 'source': 'Reuters / Trade Survey'},
+        'corn': {'low_kmt': 1200.0, 'high_kmt': 1850.0, 'source': 'Reuters / Trade Survey'},
+        'soybeans': {'low_kmt': 300.0, 'high_kmt': 750.0, 'source': 'Reuters / Trade Survey'},
         'wheat': {'low_kmt': 300.0, 'high_kmt': 500.0, 'source': 'Reuters / Trade Survey'}
     }
 }
@@ -1051,6 +1265,15 @@ def build_multi_commodity_summary(payload, release_date):
         ('oil', 'Soybean Oil', '🫗', 16, 'MY 2026/27 (Wk 1)' if release_date >= '2026-10-01' else ('MY 2025/26 (Wk 51)' if release_date == '2026-09-17' else 'MY 2025/26'))
     ]
 
+    # If release_date is not in static TRADE_EXPECTATIONS_DATABASE, attempt live fetch from LSEG Reuters API
+    if release_date not in TRADE_EXPECTATIONS_DATABASE:
+        try:
+            live_surveys = fetch_lseg_trade_expectations(count=15)
+            if live_surveys:
+                TRADE_EXPECTATIONS_DATABASE.update(live_surveys)
+        except Exception as e:
+            print(f"[WARN] Live LSEG survey lookup failed: {e}")
+
     date_estimates = TRADE_EXPECTATIONS_DATABASE.get(release_date, {})
     items = []
 
@@ -1077,10 +1300,19 @@ def build_multi_commodity_summary(payload, release_date):
 
         wk_exp = total_row.get('weekly_export')
         if wk_exp is None or wk_exp == 0.0:
-            if release_date == '2026-09-17':
+            t_curves = pkg.get('data', {}).get('total', {}).get('curves', {})
+            cur_my = pkg.get('thu_same_week', {}).get('current_my', '2026-27')
+            cur_pts = t_curves.get(cur_my, [])
+            if cur_pts:
+                matched_pt = next((p for p in cur_pts if p.get('date') == release_date), cur_pts[-1])
+                wk_exp = float((matched_pt.get('exp_kmt') or 0.0) * 1e3)
+            elif release_date == '2026-09-17':
                 wk_exp = KNOWN_EXPORTS_2026_09_17.get(c_key, 0.0)
             else:
                 wk_exp = 0.0
+
+        if total_row is not None and isinstance(total_row, dict):
+            total_row['weekly_export'] = wk_exp
 
         comm_est = date_estimates.get(c_key)
         if comm_est:
@@ -1183,6 +1415,69 @@ def build_multi_commodity_summary(payload, release_date):
             }
         }
     }
+
+
+def fetch_lseg_inspections_expectations(count=15):
+    """
+    Queries LSEG news for Reuters USDA weekly export inspections surveys:
+    'TABLE-Trade estimates for USDA grain export inspections'
+    Returns a dict mapping dates (both Monday release and Thursday cutoff) to commodity trade expectations.
+    """
+    try:
+        import lseg.data as ld
+        from lseg.data.content import news
+        from datetime import timedelta
+
+        ld.open_session()
+        query = 'estimates inspections'
+        resp = news.headlines.Definition(query=query, count=count).get_data()
+        df = resp.data.df
+        if df is None or df.empty:
+            return {}
+
+        database = {}
+        for idx, row in df.iterrows():
+            headline = row.get('headline', '')
+            if 'TABLE-Trade estimates for USDA grain export inspections' not in headline:
+                continue
+
+            sid = row.get('storyId')
+            date_match = re.search(r':(\d{4})(\d{2})(\d{2}):', sid)
+            if not date_match:
+                continue
+
+            rel_date_str = f"{date_match.group(1)}-{date_match.group(2)}-{date_match.group(3)}"
+            rel_dt = datetime.strptime(rel_date_str, "%Y-%m-%d")
+            weekday = rel_dt.weekday()
+            days_prior = 4 if weekday == 0 else (5 if weekday == 1 else 4)
+            wk_ending_dt = rel_dt - timedelta(days=days_prior)
+            wk_ending_str = wk_ending_dt.strftime("%Y-%m-%d")
+
+            story_resp = news.story.Definition(story_id=sid).get_data()
+            stext = story_resp.data.story.content.text
+
+            res = {}
+            for line in stext.splitlines():
+                m = re.match(r'^\s*(Wheat|Corn|Soybeans)\s+([\d,]+)\s*-\s*([\d,]+)', line.strip(), re.I)
+                if m:
+                    comm = m.group(1).lower()
+                    low = float(m.group(2).replace(',', ''))
+                    high = float(m.group(3).replace(',', ''))
+                    res[comm] = {
+                        'low_kmt': round(low / 1e3, 1),
+                        'high_kmt': round(high / 1e3, 1),
+                        'label': f"{low/1e3:,.0f} – {high/1e3:,.0f}",
+                        'source': 'Reuters / Trade Survey'
+                    }
+
+            if res:
+                database[rel_date_str] = res
+                database[wk_ending_str] = res
+
+        return database
+    except Exception as e:
+        print(f"[WARN] Failed fetching LSEG inspections expectations: {e}")
+        return {}
 
 
 def get_inspection_myear_and_week(grain, dt_str):
@@ -1639,7 +1934,11 @@ def build_export_inspections_data(payload):
 
         yoy_pct = ((mytd_cum - mytd_ly_cum) / mytd_ly_cum * 100.0) if mytd_ly_cum > 0 else 0.0
 
-        date_est = INSPECTIONS_EXPECTATIONS_DATABASE.get(latest_date, {}).get(g_key)
+        # Check by latest_date or release_date in database
+        date_est = (
+            INSPECTIONS_EXPECTATIONS_DATABASE.get(latest_date, {}).get(g_key) or
+            INSPECTIONS_EXPECTATIONS_DATABASE.get(release_date, {}).get(g_key)
+        )
         if date_est:
             low_kmt = date_est['low_kmt']
             high_kmt = date_est['high_kmt']
