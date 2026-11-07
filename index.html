@@ -265,23 +265,47 @@
           </div>
         </div>
 
-        <!-- Table -->
-        <div class="overflow-x-auto border border-[var(--border,#e2e8f0)] rounded-lg">
+        <!-- Table (Flushed Left & Compact 2-Row Wrapped Headers) -->
+        <div class="overflow-x-auto border border-[var(--border,#e2e8f0)] rounded-lg inline-block min-w-0 max-w-full">
           <table class="table-auto text-left text-xs whitespace-nowrap">
-            <thead class="bg-slate-50 dark:bg-slate-900 border-b border-[var(--border,#cbd5e1)] text-[11px] font-bold text-slate-700 dark:text-slate-300">
+            <thead class="bg-slate-50 dark:bg-slate-900 border-b border-[var(--border,#cbd5e1)] text-[11px] font-bold text-slate-700 dark:text-slate-300 leading-tight">
               <tr>
-                <th class="py-3 px-3.5">Commodity & Marketing Year</th>
-                <th class="py-3 px-3 text-right">Trade Survey Expected Range</th>
-                <th class="py-3 px-3 text-right">Weekly Inspected (Actual)</th>
-                <th class="py-3 px-3 text-center">Market Signal</th>
-                <th class="py-3 px-3 text-right">Prior Week (Rev.)</th>
-                <th class="py-3 px-3 text-right">Same Week Last Year</th>
-                <th class="py-3 px-3 text-right">Cumulative (MYTD)</th>
-                <th class="py-3 px-3 text-right">Prior Year Same Period</th>
-                <th class="py-3 px-3 text-right">YoY Change</th>
-                <th class="py-3 px-3 text-right">USDA Full-Year Target</th>
-                <th class="py-3 px-3 text-center">% Target Inspected</th>
-                <th class="py-3 px-3 text-center">Chart Action</th>
+                <th class="py-2.5 px-3 text-left border-r border-slate-200/70 dark:border-slate-800/70 align-bottom min-w-[150px]">
+                  <div>Commodity</div>
+                  <div class="text-[10px] text-slate-500 font-normal mt-0.5">Marketing Year</div>
+                </th>
+                <th class="py-2.5 px-2 text-center border-r border-slate-200/70 dark:border-slate-800/70 align-bottom w-32">
+                  <div>Trade Range</div>
+                  <div class="text-[10px] text-slate-500 font-normal mt-0.5">&amp; Signal</div>
+                </th>
+                <th class="py-2.5 px-2 text-center border-r border-slate-200/70 dark:border-slate-800/70 align-bottom w-24">
+                  <div>Weekly</div>
+                  <div class="text-[10px] text-slate-500 font-normal mt-0.5">Inspected</div>
+                </th>
+                <th class="py-2.5 px-2 text-center border-r border-slate-200/70 dark:border-slate-800/70 align-bottom w-24">
+                  <div>Prior</div>
+                  <div class="text-[10px] text-slate-500 font-normal mt-0.5">Week</div>
+                </th>
+                <th class="py-2.5 px-2 text-center border-r border-slate-200/70 dark:border-slate-800/70 align-bottom w-24">
+                  <div>Same Wk</div>
+                  <div class="text-[10px] text-slate-500 font-normal mt-0.5">Last Year</div>
+                </th>
+                <th class="py-2.5 px-2 text-center border-r border-slate-200/70 dark:border-slate-800/70 align-bottom w-24">
+                  <div>MYTD</div>
+                  <div class="text-[10px] text-slate-500 font-normal mt-0.5">Cumulative</div>
+                </th>
+                <th class="py-2.5 px-2 text-center border-r border-slate-200/70 dark:border-slate-800/70 align-bottom w-24">
+                  <div>MYTD</div>
+                  <div class="text-[10px] text-slate-500 font-normal mt-0.5">Prior Year</div>
+                </th>
+                <th class="py-2.5 px-2 text-center border-r border-slate-200/70 dark:border-slate-800/70 align-bottom w-20">
+                  <div>YoY %</div>
+                  <div class="text-[10px] text-slate-500 font-normal mt-0.5">Change</div>
+                </th>
+                <th class="py-2.5 px-2 text-center align-bottom w-24">
+                  <div>USDA</div>
+                  <div class="text-[10px] text-slate-500 font-normal mt-0.5">Target</div>
+                </th>
               </tr>
             </thead>
             <tbody class="divide-y divide-[var(--border,#e2e8f0)]" id="insp-table-tbody">
