@@ -60,9 +60,25 @@ for env_p in ENV_PATHS:
         except Exception:
             pass
 
-SMTP_HOST = os.getenv("SMTP_HOST", local_config.get("SMTP_HOST", "smtp.gmail.com"))
+# Shared secrets file (scratch/.env): USDA API keys only. SMTP settings are deliberately not
+# inherited from it, so a local run behaves exactly as before. In GitHub Actions the keys come
+# from environment variables and this block finds nothing.
+for _parent in REPO_DIR.parents:
+    if (_parent / "scratch_env.py").is_file() and (_parent / ".env").is_file():
+        try:
+            for _line in (_parent / ".env").read_text(encoding="utf-8").splitlines():
+                _line = _line.strip()
+                if _line and not _line.startswith('#') and '=' in _line:
+                    _k, _v = _line.split('=', 1)
+                    if _k.strip() in ("AMS_API_KEY", "FAS_API_KEY") and _k.strip() not in local_config:
+                        local_config[_k.strip()] = _v.strip()
+        except Exception:
+            pass
+        break
+
+SMTP_HOST = os.getenv("SMTP_HOST", local_config.get("SMTP_HOST", "smtp-mail.outlook.com"))
 SMTP_PORT = int(os.getenv("SMTP_PORT", local_config.get("SMTP_PORT", "587")))
-SMTP_USER = os.getenv("SMTP_USER", local_config.get("SMTP_USER", "chengguanh@gmail.com"))
+SMTP_USER = os.getenv("SMTP_USER", local_config.get("SMTP_USER", "firstresourcestrading@outlook.com"))
 SMTP_PASSWORD = os.getenv("SMTP_PASSWORD", local_config.get("SMTP_PASSWORD", ""))
 EMAIL_FROM = os.getenv("EMAIL_FROM", local_config.get("EMAIL_FROM", SMTP_USER))
 EMAIL_RECIPIENT = os.getenv("EMAIL_RECIPIENT", local_config.get("EMAIL_RECIPIENT", "chengguan.hui@first-resources.com"))
@@ -1913,6 +1929,11 @@ def build_export_inspections_data(payload):
                     if 'mytd' in dest_comparisons.get(g_key, {}):
                         curr_mytd = dest_comparisons[g_key]['mytd'].setdefault('2026-27', {}).get(dest, 0.0)
                         dest_comparisons[g_key]['mytd']['2026-27'][dest] = round(curr_mytd + kmt, 1)
+
+    # Monday release date that follows the latest inspections cutoff (used for expectations lookup)
+    _cutoff_dt = datetime.strptime(latest_date, '%Y-%m-%d')
+    _days_ahead = (0 - _cutoff_dt.weekday()) % 7 or 7
+    release_date = (_cutoff_dt + timedelta(days=_days_ahead)).strftime('%Y-%m-%d')
 
     # Build curves & summary items
     curves_by_grain = {}

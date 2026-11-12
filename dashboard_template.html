@@ -90,51 +90,7 @@
           <!-- Rendered dynamically -->
         </div>
 
-        <!-- Destination Filter Dropdown -->
-        <div class="relative inline-block text-left" id="dest-dropdown-wrapper">
-          <div class="flex items-center gap-2">
-            <label class="text-xs font-semibold text-[var(--muted-foreground,#64748b)] whitespace-nowrap">Destination:</label>
-            <button id="dest-dropdown-btn" onclick="toggleDestDropdown()" type="button" class="inline-flex items-center justify-between w-64 sm:w-80 px-3 py-1.5 text-xs font-medium bg-[var(--card,#ffffff)] border border-[var(--border,#cbd5e1)] rounded-lg shadow-xs hover:bg-[var(--secondary,#f1f5f9)] focus:outline-none focus:ring-2 focus:ring-blue-500">
-              <span id="dest-btn-label" class="truncate font-semibold text-blue-700 dark:text-blue-400">🌎 All Destinations (Total US)</span>
-              <svg class="w-4 h-4 ml-1.5 text-slate-400 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
-            </button>
-          </div>
-
-          <!-- Dropdown Panel -->
-          <div id="dest-dropdown-panel" class="hidden absolute right-0 z-50 mt-1 w-80 sm:w-96 bg-[var(--card,#ffffff)] border border-[var(--border,#cbd5e1)] rounded-xl shadow-2xl p-3 space-y-2.5">
-            <!-- Quick Presets -->
-            <div class="pb-2 border-b border-[var(--border,#e2e8f0)] space-y-1.5">
-              <div class="text-[10px] font-bold text-[var(--muted-foreground,#64748b)] uppercase tracking-wider">Quick Presets:</div>
-              <div class="grid grid-cols-2 gap-1.5">
-                <button onclick="applyPreset('all')" class="preset-btn px-2 py-1 rounded bg-blue-50 text-blue-700 border border-blue-200 text-left font-bold text-[11px] truncate">🌎 All Destinations (Total US)</button>
-                <button onclick="applyPreset('top10')" class="preset-btn px-2 py-1 rounded bg-amber-50 text-amber-800 border border-amber-200 text-left font-bold text-[11px] truncate">⭐ Top 10 Buyers</button>
-                <button onclick="applyPreset('top5')" class="preset-btn px-2 py-1 rounded bg-[var(--secondary,#f1f5f9)] text-left font-medium text-[11px] truncate">⭐ Top 5 Buyers</button>
-                <button onclick="applyPreset('ex_china_unk')" class="preset-btn px-2 py-1 rounded bg-[var(--secondary,#f1f5f9)] text-left font-medium text-[11px] truncate">🚫 Excl. China & Unk</button>
-                <button id="preset-btn-china" onclick="applyPreset('china')" class="preset-btn px-2 py-1 rounded bg-[var(--secondary,#f1f5f9)] text-left font-medium text-[11px] truncate col-span-2">🇨🇳 China Only</button>
-              </div>
-              <div class="flex justify-between items-center pt-1 text-[11px]">
-                <button onclick="selectAllDests(true)" class="text-blue-600 hover:underline font-semibold">Select All</button>
-                <button onclick="selectAllDests(false)" class="text-rose-600 hover:underline font-semibold">Clear</button>
-              </div>
-            </div>
-
-            <!-- Search box -->
-            <div class="py-1">
-              <input type="text" id="dest-search" placeholder="Search countries (e.g. Mexico, Japan)..." oninput="filterDestChecklist()" class="w-full bg-[var(--background,#f8fafc)] border border-[var(--border,#cbd5e1)] rounded-md px-2.5 py-1 text-xs focus:outline-none focus:ring-1 focus:ring-blue-500">
-            </div>
-
-            <!-- Checklist Container -->
-            <div id="dest-checklist" class="max-h-56 overflow-y-auto custom-scrollbar space-y-1 divide-y divide-slate-100 dark:divide-slate-800">
-              <!-- Populated dynamically -->
-            </div>
-
-            <!-- Close Button -->
-            <div class="pt-2 border-t border-[var(--border,#e2e8f0)] flex justify-between items-center">
-              <span class="text-[10px] text-slate-400">Click name to view single destination</span>
-              <button onclick="toggleDestDropdown()" class="px-3 py-1 bg-blue-600 text-white rounded-md font-semibold text-xs shadow-xs hover:bg-blue-700">Apply & Close</button>
-            </div>
-          </div>
-        </div>
+        
       </div>
     </header>
 
@@ -142,33 +98,6 @@
     <!-- 0. EXECUTIVE MULTI-COMMODITY SUMMARY TAB VIEW CONTAINER               -->
     <!-- ===================================================================== -->
     <div id="summary-view-container" class="space-y-5">
-      <!-- Executive KPI Cards for All Commodities Combined -->
-      <div class="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4">
-        <div class="stat-card rounded-xl p-4 shadow-xs">
-          <div class="text-xs font-medium text-[var(--muted-foreground,#64748b)] uppercase tracking-wider">Weekly Net Sales (Total)</div>
-          <div class="text-2xl font-extrabold text-emerald-600 dark:text-emerald-400 mt-1" id="sum-kpi-net">--</div>
-          <div class="text-[11px] text-[var(--muted-foreground,#64748b)] mt-1 truncate">All 5 Commodities Combined</div>
-        </div>
-
-        <div class="stat-card rounded-xl p-4 shadow-xs">
-          <div class="text-xs font-medium text-[var(--muted-foreground,#64748b)] uppercase tracking-wider">Weekly Exports Shipped</div>
-          <div class="text-2xl font-extrabold text-blue-600 dark:text-blue-400 mt-1" id="sum-kpi-export">--</div>
-          <div class="text-[11px] text-[var(--muted-foreground,#64748b)] mt-1 truncate">Physical Vessel Departures</div>
-        </div>
-
-        <div class="stat-card rounded-xl p-4 shadow-xs">
-          <div class="text-xs font-medium text-[var(--muted-foreground,#64748b)] uppercase tracking-wider">Total Outstanding (Unshipped)</div>
-          <div class="text-2xl font-extrabold text-amber-600 dark:text-amber-400 mt-1" id="sum-kpi-out">--</div>
-          <div class="text-[11px] text-[var(--muted-foreground,#64748b)] mt-1 truncate">Booked Contracts Awaiting Export</div>
-        </div>
-
-        <div class="stat-card rounded-xl p-4 shadow-xs">
-          <div class="text-xs font-medium text-[var(--muted-foreground,#64748b)] uppercase tracking-wider">Total Commitments & Pacing</div>
-          <div class="text-2xl font-extrabold text-indigo-600 dark:text-indigo-400 mt-1" id="sum-kpi-tot">--</div>
-          <div class="text-[11px] text-[var(--muted-foreground,#64748b)] mt-1 truncate" id="sum-kpi-pacing-desc">38.4% of USDA Target Booked</div>
-        </div>
-      </div>
-
       <!-- Multi-Commodity Summary Intelligence Table -->
       <div class="stat-card rounded-xl p-5 shadow-xs space-y-4">
         <div class="flex flex-col md:flex-row md:items-center justify-between gap-3 pb-3 border-b border-[var(--border,#e2e8f0)]">
@@ -503,34 +432,7 @@
     <!-- SINGLE COMMODITY VIEW CONTAINER (Corn, Soybeans, Wheat, Meal, Oil)    -->
     <!-- ===================================================================== -->
     <div id="commodity-view-container" class="space-y-5" style="display: none;">
-      <!-- Executive KPI Cards -->
-      <div class="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4">
-      <div class="stat-card rounded-xl p-4 shadow-xs">
-        <div class="text-xs font-medium text-[var(--muted-foreground,#64748b)] uppercase tracking-wider" id="kpi-cmy-title">Total Commitments</div>
-        <div class="text-2xl font-extrabold text-[var(--foreground,#0f172a)] mt-1" id="kpi-cmy-tot">--</div>
-        <div class="text-[11px] text-[var(--muted-foreground,#64748b)] mt-1 truncate" id="kpi-cmy-breakdown">Current Marketing Year</div>
-      </div>
-
-      <div class="stat-card rounded-xl p-4 shadow-xs">
-        <div class="text-xs font-medium text-[var(--muted-foreground,#64748b)] uppercase tracking-wider">YoY Comparison</div>
-        <div class="text-2xl font-extrabold mt-1" id="kpi-yoy-diff">--</div>
-        <div class="text-[11px] text-[var(--muted-foreground,#64748b)] mt-1" id="kpi-yoy-pct">vs prior season pace</div>
-      </div>
-
-      <div class="stat-card rounded-xl p-4 shadow-xs">
-        <div class="text-xs font-medium text-[var(--muted-foreground,#64748b)] uppercase tracking-wider" id="kpi-nmy-title">New Crop Bookings</div>
-        <div class="text-2xl font-extrabold text-blue-600 dark:text-blue-400 mt-1" id="kpi-nmy-tot">--</div>
-        <div class="text-[11px] text-[var(--muted-foreground,#64748b)] mt-1 font-medium" id="kpi-nmy-net">Latest Week Net: --</div>
-      </div>
-
-      <div class="stat-card rounded-xl p-4 shadow-xs">
-        <div class="text-xs font-medium text-[var(--muted-foreground,#64748b)] uppercase tracking-wider">Market Share</div>
-        <div class="text-2xl font-extrabold text-indigo-600 dark:text-indigo-400 mt-1" id="kpi-share">--</div>
-        <div class="text-[11px] text-[var(--muted-foreground,#64748b)] mt-1 truncate" id="kpi-share-desc">of total US exports</div>
-      </div>
-    </div>
-
-    <!-- ===================================================================== -->
+      <!-- ===================================================================== -->
     <!-- 1. PRIMARY SECTION: MAIN SEASONAL PROGRESS & PACING CHART (FIRST!)   -->
     <!-- ===================================================================== -->
     <div class="stat-card rounded-xl p-5 shadow-xs space-y-4">
@@ -553,6 +455,49 @@
             <button id="btn-cat-exp" onclick="setChartCategory('exp')" class="category-tab px-2.5 py-1 rounded text-slate-600 hover:text-slate-900">📦 Weekly Exports</button>
             <button id="btn-cat-out" onclick="setChartCategory('out')" class="category-tab px-2.5 py-1 rounded text-slate-600 hover:text-slate-900">📝 Outstanding Sales</button>
             <button id="btn-cat-pacing" onclick="setChartCategory('pacing')" class="category-tab px-2.5 py-1 rounded text-amber-700 hover:text-amber-900 font-bold">🎯 USDA Target Pace</button>
+          </div>
+
+          <!-- Destination Filter Dropdown (Relocated on the left of All US / Top 10 / Top 5) -->
+          <div class="relative inline-block text-left" id="dest-dropdown-wrapper">
+            <button id="dest-dropdown-btn" onclick="toggleDestDropdown()" type="button" class="inline-flex items-center justify-between w-52 sm:w-64 px-2.5 py-1 text-xs font-medium bg-[var(--card,#ffffff)] border border-[var(--border,#cbd5e1)] rounded-lg shadow-xs hover:bg-[var(--secondary,#f1f5f9)] focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all">
+              <span id="dest-btn-label" class="truncate font-semibold text-blue-700 dark:text-blue-400">🌎 All Destinations (Total US)</span>
+              <svg class="w-3.5 h-3.5 ml-1 text-slate-400 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
+            </button>
+
+            <!-- Dropdown Panel -->
+            <div id="dest-dropdown-panel" class="hidden absolute left-0 z-50 mt-1 w-80 sm:w-96 bg-[var(--card,#ffffff)] border border-[var(--border,#cbd5e1)] rounded-xl shadow-2xl p-3 space-y-2.5">
+              <!-- Quick Presets -->
+              <div class="pb-2 border-b border-[var(--border,#e2e8f0)] space-y-1.5">
+                <div class="text-[10px] font-bold text-[var(--muted-foreground,#64748b)] uppercase tracking-wider">Quick Presets:</div>
+                <div class="grid grid-cols-2 gap-1.5">
+                  <button onclick="applyPreset('all')" class="preset-btn px-2 py-1 rounded bg-blue-50 text-blue-700 border border-blue-200 text-left font-bold text-[11px] truncate">🌎 All Destinations (Total US)</button>
+                  <button onclick="applyPreset('top10')" class="preset-btn px-2 py-1 rounded bg-amber-50 text-amber-800 border border-amber-200 text-left font-bold text-[11px] truncate">⭐ Top 10 Buyers</button>
+                  <button onclick="applyPreset('top5')" class="preset-btn px-2 py-1 rounded bg-[var(--secondary,#f1f5f9)] text-left font-medium text-[11px] truncate">⭐ Top 5 Buyers</button>
+                  <button onclick="applyPreset('ex_china_unk')" class="preset-btn px-2 py-1 rounded bg-[var(--secondary,#f1f5f9)] text-left font-medium text-[11px] truncate">🚫 Excl. China & Unk</button>
+                  <button id="preset-btn-china" onclick="applyPreset('china')" class="preset-btn px-2 py-1 rounded bg-[var(--secondary,#f1f5f9)] text-left font-medium text-[11px] truncate col-span-2">🇨🇳 China Only</button>
+                </div>
+                <div class="flex justify-between items-center pt-1 text-[11px]">
+                  <button onclick="selectAllDests(true)" class="text-blue-600 hover:underline font-semibold">Select All</button>
+                  <button onclick="selectAllDests(false)" class="text-slate-500 hover:underline">Clear All</button>
+                </div>
+              </div>
+
+              <!-- Search input -->
+              <div class="relative">
+                <input type="text" id="dest-search" oninput="filterDestList()" placeholder="Search destination (e.g. Mexico)..." class="w-full px-2.5 py-1 text-xs border border-[var(--border,#cbd5e1)] rounded-md bg-[var(--card,#ffffff)] text-[var(--foreground,#0f172a)] placeholder-slate-400 focus:outline-none focus:ring-1 focus:ring-blue-500">
+              </div>
+
+              <!-- Destination Checklist -->
+              <div id="dest-checklist" class="max-h-56 overflow-y-auto custom-scrollbar space-y-1 divide-y divide-slate-100 dark:divide-slate-800">
+                <!-- Populated dynamically -->
+              </div>
+
+              <!-- Close Button -->
+              <div class="pt-2 border-t border-[var(--border,#e2e8f0)] flex justify-between items-center">
+                <span class="text-[10px] text-slate-400">Click name to view single destination</span>
+                <button onclick="toggleDestDropdown()" class="px-3 py-1 bg-blue-600 text-white rounded-md font-semibold text-xs shadow-xs hover:bg-blue-700">Apply & Close</button>
+              </div>
+            </div>
           </div>
 
           <!-- Destination Scope Quick Pills -->
@@ -583,7 +528,7 @@
       </div>
 
       <!-- Canvas Area (Extended vertical length by +30% for clearer curve & data inspection) -->
-      <div class="relative w-full h-[560px] md:h-[665px]">
+      <div id="seasonal-chart-container" class="relative w-full h-[520px]" style="height: 520px; min-height: 520px; max-height: 520px;">
         <canvas id="seasonalChart" class="w-full h-full block"></canvas>
         <div id="chart-tooltip" class="absolute hidden pointer-events-none z-20 bg-slate-900 text-white rounded-lg shadow-2xl px-3.5 py-2.5 text-xs transition-opacity duration-150 border border-slate-700 min-w-[210px]"></div>
       </div>
@@ -1363,30 +1308,30 @@
       const labelText = document.getElementById('dest-btn-label').textContent;
 
       let catTitle = 'Total Commitments';
-      if (currentCategory === 'acc') catTitle = 'Accumulated Exports (Cumulative Shipments)';
-      else if (currentCategory === 'exp') catTitle = 'Weekly Exports (Physical Shipments)';
-      else if (currentCategory === 'out') catTitle = 'Outstanding Sales (Unshipped)';
-      else if (currentCategory === 'pacing') catTitle = 'USDA Target Pacing Trajectory';
+      if (currentCategory === 'acc') catTitle = 'Accumulated Exports';
+      else if (currentCategory === 'exp') catTitle = 'Weekly Exports';
+      else if (currentCategory === 'out') catTitle = 'Outstanding Sales';
+      else if (currentCategory === 'pacing') catTitle = 'USDA Target Pace';
 
-      if (currentCategory === 'exp') {
-        document.getElementById('chart-subtitle').textContent = '11-Year seasonal progression of weekly physical export shipments aligned across marketing years';
-      } else if (currentCategory === 'acc') {
-        document.getElementById('chart-subtitle').textContent = '11-Year seasonal progression of accumulated export shipments aligned across marketing years';
-      } else if (currentCategory === 'out') {
-        document.getElementById('chart-subtitle').textContent = '11-Year seasonal progression of outstanding unshipped export sales aligned across marketing years';
-      } else {
-        document.getElementById('chart-subtitle').textContent = '11-Year seasonal comparison aligned across marketing years with official USDA Target Pacing Trajectory';
+      const chartSub = document.getElementById('chart-subtitle');
+      if (chartSub) {
+        chartSub.textContent = '11-Year seasonal progression aligned across marketing years with official USDA Target Pacing Trajectory';
       }
 
-      document.getElementById('chart-title').textContent = `US ${pkg.commodity} Export Sales: ${catTitle} &mdash; ${labelText} (${unitLabel})`;
+      const chartTitleEl = document.getElementById('chart-title');
+      if (chartTitleEl) {
+        chartTitleEl.textContent = `US ${pkg.commodity} Export Sales: ${catTitle} (${unitLabel})`;
+      }
       document.getElementById('page-title').textContent = `US ${pkg.commodity} Export Sales Seasonal Progress & Pacing`;
 
       const cmyKey = '2025-26';
       const nmyKey = '2026-27';
       const compKey = '2024-25';
 
-      document.getElementById('kpi-cmy-title').textContent = `Total Commitments (${cmyKey})`;
-      document.getElementById('kpi-nmy-title').textContent = `New Crop Bookings (${nmyKey})`;
+      const cmyTitleEl = document.getElementById('kpi-cmy-title');
+      if (cmyTitleEl) cmyTitleEl.textContent = `Total Commitments (${cmyKey})`;
+      const nmyTitleEl = document.getElementById('kpi-nmy-title');
+      if (nmyTitleEl) nmyTitleEl.textContent = `New Crop Bookings (${nmyKey})`;
 
       const cmyPts = aggregatedCurve[cmyKey] || [];
       const compPts = aggregatedCurve[compKey] || [];
@@ -1396,49 +1341,64 @@
       const latestNmy = nmyPts.length > 0 ? nmyPts[nmyPts.length - 1] : null;
       const sameWeekComp = (latestCmy && compPts.length >= cmyPts.length) ? compPts[cmyPts.length - 1] : null;
 
-      if (latestCmy) {
-        const v = currentUnit === 'kmt' ? (latestCmy.tot_kmt || latestCmy.kmt) : (latestCmy.tot_kmt || latestCmy.kmt)/1000.0;
-        document.getElementById('kpi-cmy-tot').textContent = fmtVal(v, true);
-        document.getElementById('kpi-cmy-breakdown').textContent = `Date: ${latestCmy.date} (Week ${cmyPts.length})`;
-      } else {
-        document.getElementById('kpi-cmy-tot').textContent = '--';
+      const cmyTotEl = document.getElementById('kpi-cmy-tot');
+      const cmyBkEl = document.getElementById('kpi-cmy-breakdown');
+      if (cmyTotEl) {
+        if (latestCmy) {
+          const v = currentUnit === 'kmt' ? (latestCmy.tot_kmt || latestCmy.kmt) : (latestCmy.tot_kmt || latestCmy.kmt)/1000.0;
+          cmyTotEl.textContent = fmtVal(v, true);
+          if (cmyBkEl) cmyBkEl.textContent = `Date: ${latestCmy.date} (Week ${cmyPts.length})`;
+        } else {
+          cmyTotEl.textContent = '--';
+        }
       }
 
-      if (latestNmy) {
-        const v = currentUnit === 'kmt' ? (latestNmy.tot_kmt || latestNmy.kmt) : (latestNmy.tot_kmt || latestNmy.kmt)/1000.0;
-        document.getElementById('kpi-nmy-tot').textContent = fmtVal(v, true);
-        const netStr = fmtVal(currentUnit === 'kmt' ? latestNmy.net_kmt : (latestNmy.net_kmt/1000), true);
-        document.getElementById('kpi-nmy-net').textContent = `Latest Week Net: ${latestNmy.net_kmt > 0 ? '+' : ''}${netStr}`;
-      } else {
-        document.getElementById('kpi-nmy-tot').textContent = '--';
-        document.getElementById('kpi-nmy-net').textContent = 'None';
+      const nmyTotEl = document.getElementById('kpi-nmy-tot');
+      const nmyNetEl = document.getElementById('kpi-nmy-net');
+      if (nmyTotEl) {
+        if (latestNmy) {
+          const v = currentUnit === 'kmt' ? (latestNmy.tot_kmt || latestNmy.kmt) : (latestNmy.tot_kmt || latestNmy.kmt)/1000.0;
+          nmyTotEl.textContent = fmtVal(v, true);
+          const netStr = fmtVal(currentUnit === 'kmt' ? latestNmy.net_kmt : (latestNmy.net_kmt/1000), true);
+          if (nmyNetEl) nmyNetEl.textContent = `Latest Week Net: ${latestNmy.net_kmt > 0 ? '+' : ''}${netStr}`;
+        } else {
+          nmyTotEl.textContent = '--';
+          if (nmyNetEl) nmyNetEl.textContent = 'None';
+        }
       }
 
-      if (latestCmy && sameWeekComp) {
-        const diff = (latestCmy.tot_kmt || latestCmy.kmt) - (sameWeekComp.tot_kmt || sameWeekComp.kmt);
-        const pct = (sameWeekComp.tot_kmt || sameWeekComp.kmt) > 0 ? (diff / (sameWeekComp.tot_kmt || sameWeekComp.kmt) * 100) : 0;
-        const diffVal = currentUnit === 'kmt' ? diff : (diff / 1000);
-        const diffStr = (diff >= 0 ? '+' : '') + fmtVal(diffVal, true);
-        const diffElem = document.getElementById('kpi-yoy-diff');
-        diffElem.textContent = diffStr;
-        diffElem.className = 'text-2xl font-extrabold mt-1 ' + (diff >= 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-600 dark:text-rose-400');
-        
-        const priorStr = fmtVal(currentUnit === 'kmt' ? (sameWeekComp.tot_kmt || sameWeekComp.kmt) : (sameWeekComp.tot_kmt || sameWeekComp.kmt)/1000.0, true);
-        document.getElementById('kpi-yoy-pct').textContent = `vs ${priorStr} (${diff >= 0 ? '+' : ''}${pct.toFixed(1)}%)`;
-      } else {
-        document.getElementById('kpi-yoy-diff').textContent = '--';
-        document.getElementById('kpi-yoy-pct').textContent = 'No prior comparison';
+      const diffElem = document.getElementById('kpi-yoy-diff');
+      const yoyPctEl = document.getElementById('kpi-yoy-pct');
+      if (diffElem) {
+        if (latestCmy && sameWeekComp) {
+          const diff = (latestCmy.tot_kmt || latestCmy.kmt) - (sameWeekComp.tot_kmt || sameWeekComp.kmt);
+          const pct = (sameWeekComp.tot_kmt || sameWeekComp.kmt) > 0 ? (diff / (sameWeekComp.tot_kmt || sameWeekComp.kmt) * 100) : 0;
+          const diffVal = currentUnit === 'kmt' ? diff : (diff / 1000);
+          const diffStr = (diff >= 0 ? '+' : '') + fmtVal(diffVal, true);
+          diffElem.textContent = diffStr;
+          diffElem.className = 'text-2xl font-extrabold mt-1 ' + (diff >= 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-600 dark:text-rose-400');
+          
+          const priorStr = fmtVal(currentUnit === 'kmt' ? (sameWeekComp.tot_kmt || sameWeekComp.kmt) : (sameWeekComp.tot_kmt || sameWeekComp.kmt)/1000.0, true);
+          if (yoyPctEl) yoyPctEl.textContent = `vs ${priorStr} (${diff >= 0 ? '+' : ''}${pct.toFixed(1)}%)`;
+        } else {
+          diffElem.textContent = '--';
+          if (yoyPctEl) yoyPctEl.textContent = 'No prior comparison';
+        }
       }
 
-      const totalDest = pkg.data['total'];
-      if (totalDest && latestCmy && totalDest.curves[cmyKey]) {
-        const totVal = totalDest.curves[cmyKey][totalDest.curves[cmyKey].length - 1].tot_kmt;
-        const curVal = (latestCmy.tot_kmt || latestCmy.kmt);
-        const share = totVal > 0 ? (curVal / totVal * 100).toFixed(1) : '0.0';
-        document.getElementById('kpi-share').textContent = `${share}%`;
-        document.getElementById('kpi-share-desc').textContent = `of US ${fmtVal(currentUnit === 'kmt' ? totVal : totVal/1000, true)} total`;
-      } else {
-        document.getElementById('kpi-share').textContent = '--';
+      const shareEl = document.getElementById('kpi-share');
+      const shareDescEl = document.getElementById('kpi-share-desc');
+      if (shareEl) {
+        const totalDest = pkg.data['total'];
+        if (totalDest && latestCmy && totalDest.curves[cmyKey]) {
+          const totVal = totalDest.curves[cmyKey][totalDest.curves[cmyKey].length - 1].tot_kmt;
+          const curVal = (latestCmy.tot_kmt || latestCmy.kmt);
+          const share = totVal > 0 ? (curVal / totVal * 100).toFixed(1) : '0.0';
+          shareEl.textContent = `${share}%`;
+          if (shareDescEl) shareDescEl.textContent = `of US ${fmtVal(currentUnit === 'kmt' ? totVal : totVal/1000, true)} total`;
+        } else {
+          shareEl.textContent = '--';
+        }
       }
 
       // Target Banner and Toggle Button Visibility (Restricted to All Destinations)
@@ -1462,11 +1422,11 @@
         if (targetBtn) targetBtn.style.display = 'none';
       }
 
-      drawChart();
       render8RowTable();
       try { renderThursdayDestinationsTable(); } catch (err) { console.error('Error in renderThursdayDestinationsTable:', err); }
       renderProgressionTable();
       renderPacingTracker();
+      window.requestAnimationFrame(() => drawChart());
     }
 
     // Professional Nice Scale Generator for Y-Axis
@@ -1498,13 +1458,18 @@
       const ctx = canvas.getContext('2d');
       const dpr = window.devicePixelRatio || 1;
 
-      const rect = canvas.getBoundingClientRect();
-      canvas.width = rect.width * dpr;
-      canvas.height = rect.height * dpr;
-      ctx.scale(dpr, dpr);
+      const container = canvas.parentElement || canvas;
+      const rect = container.getBoundingClientRect();
+      const W = Math.round(rect.width);
+      const H = Math.round(rect.height || 520);
+      if (W <= 0 || H <= 0) return;
 
-      const W = rect.width;
-      const H = rect.height;
+      canvas.style.width = W + 'px';
+      canvas.style.height = H + 'px';
+      canvas.width = Math.round(W * dpr);
+      canvas.height = Math.round(H * dpr);
+      ctx.setTransform(1, 0, 0, 1, 0, 0);
+      ctx.scale(dpr, dpr);
       const padding = { top: 36, right: 40, bottom: 62, left: 78 };
       const plotW = W - padding.left - padding.right;
       const plotH = H - padding.top - padding.bottom;
@@ -1766,6 +1731,17 @@
 
     function setupCanvasEvents() {
       const canvas = document.getElementById('seasonalChart');
+      if (window.ResizeObserver) {
+        const chartBox = document.getElementById('seasonal-chart-container');
+        if (chartBox) {
+          const ro = new ResizeObserver(() => {
+            if (currentCommodity !== 'summary' && currentCommodity !== 'inspections') {
+              window.requestAnimationFrame(() => drawChart());
+            }
+          });
+          ro.observe(chartBox);
+        }
+      }
       canvas.addEventListener('mousemove', (e) => {
         const rect = canvas.getBoundingClientRect();
         handleChartHover(e.clientX - rect.left, e.clientY - rect.top, rect);

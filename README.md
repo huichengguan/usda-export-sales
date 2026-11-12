@@ -33,8 +33,8 @@ git push -u origin main
 
 ### Step 3: Add Secrets & Enable GitHub Pages
 1. In your GitHub repo, go to **Settings** > **Secrets and variables** > **Actions** > **New repository secret**:
-   - `SMTP_USER` = `chengguanh@gmail.com`
-   - `SMTP_PASSWORD` = `rilkcsxdjaikkcif` (your Google App Password)
+   - `SMTP_USER` = `firstresourcestrading@outlook.com`
+   - `SMTP_PASSWORD` = `<SMTP_PASSWORD - stored in scratch/.env>` (your Google App Password)
    - `EMAIL_RECIPIENT` = `chengguan.hui@first-resources.com`
 2. Go to **Settings** > **Pages**:
    - Under **Build and deployment** > **Source**, select **GitHub Actions**.
