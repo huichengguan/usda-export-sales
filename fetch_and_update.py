@@ -1251,10 +1251,18 @@ DEFAULT_INSPECTION_RANGES = {
 
 TARGETS_PSD = {
     'corn': 83189.0,
-    'soybeans': 49668.0,
-    'wheat': 23814.0,
-    'meal': 17690.0,
-    'oil': 907.0
+    'soybeans': 46811.0,
+    'wheat': 20412.0,
+    'meal': 20593.0,
+    'oil': 181.0
+}
+
+TARGETS_PSD_2025_26 = {
+    'corn': 87106.0,
+    'soybeans': 41243.0,
+    'wheat': 24706.0,
+    'meal': 18418.0,
+    'oil': 445.0
 }
 
 KNOWN_EXPORTS_2026_09_17 = {
@@ -1746,8 +1754,8 @@ def build_export_inspections_data(payload):
     }
     wasde_targets = {
         'corn': 83189.0,
-        'soybeans': 49668.0,
-        'wheat': 23814.0
+        'soybeans': 46811.0,
+        'wheat': 20412.0
     }
 
     rows = []
@@ -2353,6 +2361,23 @@ def recalculate_pacing_tracker(payload):
         # 1. 2026/27 New Crop Pace
         nmy = item['usda_pacing'].get('nmy_2026_27')
         if nmy:
+            if cKey in TARGETS_PSD:
+                nmy['target_kmt'] = TARGETS_PSD[cKey]
+                nmy['target_mnt'] = round(TARGETS_PSD[cKey] / 1e3, 3)
+
+            # Re-scale target pacing curve to new target
+            if 'target_pace_curves' in item and '2026-27' in item['target_pace_curves']:
+                tgt_val = nmy['target_kmt']
+                curve_pts = item['target_pace_curves']['2026-27']
+                if curve_pts and isinstance(curve_pts[0], dict):
+                    for pt in curve_pts:
+                        pct_val = pt.get('pct', 0.0)
+                        pt['kmt'] = round(tgt_val * (pct_val / 100.0), 1)
+                        pt['mnt'] = round((tgt_val / 1e3) * (pct_val / 100.0), 4)
+                elif curve_pts and isinstance(curve_pts[0], (int, float)):
+                    last_val = curve_pts[-1] if curve_pts[-1] > 0 else 1.0
+                    factor = tgt_val / last_val
+                    item['target_pace_curves']['2026-27'] = [round(v * factor, 1) for v in curve_pts]
             # If 2026/27 season has officially started (Wheat: June 1, Corn/Soybeans: Sept 1, Meal/Oil: Oct 1):
             # Commitments are in tot_cmy. Otherwise (before Oct 1 for Meal/Oil), in out_nmy.
             if cKey == 'wheat' or (cKey in ('corn', 'soybeans') and latest_date >= '2026-09-01') or (cKey in ('meal', 'oil') and latest_date >= '2026-10-01'):
@@ -2399,6 +2424,9 @@ def recalculate_pacing_tracker(payload):
         # 2. 2025/26 Close-out Audit
         cmy = item['usda_pacing'].get('cmy_2025_26')
         if cmy:
+            if cKey in TARGETS_PSD_2025_26:
+                cmy['target_kmt'] = TARGETS_PSD_2025_26[cKey]
+                cmy['target_mnt'] = round(TARGETS_PSD_2025_26[cKey] / 1e3, 3)
             # If 2025/26 season is completed (Wheat on May 31, Corn/Soybeans on Aug 31, Meal/Oil on Sep 30)
             if cKey == 'wheat' or (cKey in ('corn', 'soybeans') and latest_date >= '2026-09-01') or (cKey in ('meal', 'oil') and latest_date >= '2026-10-01'):
                 cmy['status_desc'] = "Completed (Ended Sep 30, 2026)" if cKey in ('meal', 'oil') else ("Completed (Ended Aug 31, 2026)" if cKey != 'wheat' else "Completed (Ended May 31, 2026)")
